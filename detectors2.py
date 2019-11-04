@@ -50,7 +50,7 @@ class Detector(object):
 
         return centers.reshape(self.npix[0], self.npix[1]) + (back * (-1) * self.thickness * self.norm)
 
-    def crystal_intersections(self, emission_pt, emission_dir, step=0.01, prefactor = 1):  # step in mm
+    def crystal_intersections(self, emission_pt, emission_dir, step=0.1, prefactor = 1):  # step in mm
 
         r_o = (self.f_plane - np.dot(emission_pt, self.norm)) / (np.dot(emission_dir, self.norm) * 1.0)
         omegas = np.arange(
