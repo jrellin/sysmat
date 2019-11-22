@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+# Really version 2
 
 # Obj| -> Col| -> Image +z ->
 
@@ -29,16 +30,20 @@ class Collimator(object):
             self.apertures.append(Pinhole(**kwargs))
 
     # def ray_trace(self, det1=48, det2=48, *args):
-    def ray_trace(self, *args):
-        # proj = np.ones([det2, det1])  # det1 = x, det2 = y
+    def ray_trace(self, end_pts, em_pt, *args):
         proj = np.zeros([48, 48])
+        dirs, r_sq = ray_params(end_pts, em_pt)
+        mag = self.colp[2] / dirs[:, 2]
+
         for aper in self.apertures:
             # proj *= aper.ray_pass(*args).reshape(det2, det1)
-            proj += aper.ray_pass(*args).reshape(48, 48)  # TODO: Fix this. Angles seem screwed up
+            proj += aper.ray_pass(dirs, mag).reshape(48, 48)
+
+        proj[proj > 1] = 1.0
         return proj
+# TODO: Allow for Subpixeling
 
-
-class Pinhole(object):
+class Pinhole(object):  # TODO: Check pinhole works
     def __init__(self, size=2.0,  # in mm
                  loc=(0, 0, 0),  # in mm of center relative to collimator center
                  axis=(0, 0, -1),  # normalized axis of pinhole towards object
@@ -51,11 +56,8 @@ class Pinhole(object):
         self.h_ang = np.deg2rad(aper_angle / 2.)
         # self.z_ax = coll_norm
 
-    def ray_pass(self, end_pts, em_pt):  # dirs should be normalized as rows, em_pt is point of emission
-        rays = 1.0 * (end_pts - em_pt)
-        dirs = rays / np.sqrt((rays * rays).sum(axis=1))[:, np.newaxis]
-        mag = dirs[:, 2]/self.c[2]
-        hole_hit = (np.sum(((rays * mag[:, np.newaxis]) - self.c)**2)) < (self.sze ** 2)
+    def ray_pass(self, dirs, mag):  # dirs should be normalized as rows, em_pt is point of emission
+        hole_hit = (np.sum(((dirs * mag[:, np.newaxis]) - self.c)**2)) < (self.sze ** 2)
         angle_good = np.arccos(np.abs(np.dot(dirs, self.ax))) < self.h_ang
         # return (hole_hit & angle_good).astype(int)
         return hole_hit & angle_good
@@ -84,10 +86,7 @@ class Slit(object):
         self.h_ang = np.deg2rad(aper_angle / 2.)  # Half of the opening angle of the slit in radians
         self.plane = np.cross(self.a, self.f)  # Vector that is in direction of the slit opening
 
-    def ray_pass(self, end_pts, em_pt):
-        rays = 1.0 * (end_pts - em_pt)
-        dirs = rays / np.sqrt((rays**2).sum(axis=1))[:, np.newaxis]
-        mag = self.c[2] / dirs[:, 2]
+    def ray_pass(self, dirs, mag):
         rays_coll = dirs * mag[:, np.newaxis]
         # TODO: See where points are on collimator plane
         near_slit = (rays_coll[:, 0] >= self.x_lim[0]) & (rays_coll[:, 0] <= self.x_lim[1]) & \
@@ -95,7 +94,7 @@ class Slit(object):
         hole_hit = np.abs(np.dot(rays_coll - self.c, self.plane)) < self.sze
         # angles = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f)))
         angle_good = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f))) < self.h_ang
-        return (near_slit & hole_hit & angle_good).astype(int) / (rays ** 2).sum(axis=1)
+        return (near_slit & hole_hit & angle_good).astype(int)
         # True is when it passes through the slit
 
 
@@ -167,8 +166,15 @@ class Sources(object):
         ax0_vec = np.outer(ax0_scalars, self.s_ax[0])
         ax1_vec = np.outer(ax1_scalars, self.s_ax[1])
 
-        centers = (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3)
+        centers = (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3)  # TODO: Add source origin
         # c1 = centers[:, np.newaxis]
+
+
+def ray_params(end_pts, em_pt):
+    rays = 1.0 * (end_pts - em_pt)
+    dirs = rays / np.sqrt((rays ** 2).sum(axis=1))[:, np.newaxis]
+    # return rays, dirs, (rays ** 2).sum(axis=1)
+    return dirs, (rays ** 2).sum(axis=1)
 
 
 def norm(array):
