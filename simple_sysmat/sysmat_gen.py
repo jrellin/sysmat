@@ -43,6 +43,7 @@ class Collimator(object):
         return proj
 # TODO: Allow for Subpixeling
 
+
 class Pinhole(object):  # TODO: Check pinhole works
     def __init__(self, size=2.0,  # in mm
                  loc=(0, 0, 0),  # in mm of center relative to collimator center

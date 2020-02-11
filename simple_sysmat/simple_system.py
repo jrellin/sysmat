@@ -32,10 +32,20 @@ class Collimator(object):
     def ray_trace(self, *args):
         # proj = np.ones([det2, det1])  # det1 = x, det2 = y
         proj = np.zeros([48, 48])
+        proj = np.zeros(48*48)
+        ray_dirs, ray_int, r_sq = self.ray_gen(*args)
         for aper in self.apertures:
             # proj *= aper.ray_pass(*args).reshape(det2, det1)
-            proj += aper.ray_pass(*args).reshape(48, 48)  # TODO: Fix this. Angles seem screwed up
-        return proj
+            # proj += aper.ray_pass(ray_dirs, ray_int).reshape(48, 48)
+            proj += aper.ray_pass(ray_dirs, ray_int)
+        return ((proj >= 1).astype(int)/r_sq).reshape(48, 48)  # TODO: Is r_sq really working?
+
+    def ray_gen(self, end_pts, em_pt):
+        rays = 1.0 * (end_pts - em_pt)
+        dirs = rays / np.sqrt((rays ** 2).sum(axis=1))[:, np.newaxis]
+        mag = self.colp[2] / dirs[:, 2]
+        intersection = dirs * mag[:, np.newaxis]
+        return dirs, intersection, (rays ** 2).sum(axis=1)  # Directions, intersection with coll, r^2
 
 
 class Pinhole(object):
@@ -51,11 +61,17 @@ class Pinhole(object):
         self.h_ang = np.deg2rad(aper_angle / 2.)
         # self.z_ax = coll_norm
 
-    def ray_pass(self, end_pts, em_pt):  # dirs should be normalized as rows, em_pt is point of emission
-        rays = 1.0 * (end_pts - em_pt)
-        dirs = rays / np.sqrt((rays * rays).sum(axis=1))[:, np.newaxis]
-        mag = dirs[:, 2]/self.c[2]
-        hole_hit = (np.sum(((rays * mag[:, np.newaxis]) - self.c)**2)) < (self.sze ** 2)
+    # def ray_pass(self, end_pts, em_pt):  # dirs should be normalized as rows, em_pt is point of emission
+    #    rays = 1.0 * (end_pts - em_pt)
+    #    dirs = rays / np.sqrt((rays * rays).sum(axis=1))[:, np.newaxis]
+    #    mag = dirs[:, 2]/self.c[2]  # This line is different from slit
+    #    hole_hit = (np.sum(((rays * mag[:, np.newaxis]) - self.c)**2)) < (self.sze ** 2)
+    #    angle_good = np.arccos(np.abs(np.dot(dirs, self.ax))) < self.h_ang
+    #    # return (hole_hit & angle_good).astype(int)
+    #    return hole_hit & angle_good
+
+    def ray_pass(self, dirs, intersect):  # dirs should be normalized as rows, em_pt is point of emission
+        hole_hit = (np.sum((intersect - self.c)**2)) < (self.sze ** 2)
         angle_good = np.arccos(np.abs(np.dot(dirs, self.ax))) < self.h_ang
         # return (hole_hit & angle_good).astype(int)
         return hole_hit & angle_good
@@ -84,18 +100,29 @@ class Slit(object):
         self.h_ang = np.deg2rad(aper_angle / 2.)  # Half of the opening angle of the slit in radians
         self.plane = np.cross(self.a, self.f)  # Vector that is in direction of the slit opening
 
-    def ray_pass(self, end_pts, em_pt):
-        rays = 1.0 * (end_pts - em_pt)
-        dirs = rays / np.sqrt((rays**2).sum(axis=1))[:, np.newaxis]
-        mag = self.c[2] / dirs[:, 2]
-        rays_coll = dirs * mag[:, np.newaxis]
+    # def ray_pass(self, end_pts, em_pt):
+    #    rays = 1.0 * (end_pts - em_pt)
+    #    dirs = rays / np.sqrt((rays**2).sum(axis=1))[:, np.newaxis]
+    #    mag = self.c[2] / dirs[:, 2]
+    #    rays_coll = dirs * mag[:, np.newaxis]
+    #    # TODO: See where points are on collimator plane
+    #    near_slit = (rays_coll[:, 0] >= self.x_lim[0]) & (rays_coll[:, 0] <= self.x_lim[1]) & \
+    #                (rays_coll[:, 1] >= self.y_lim[0]) & (rays_coll[:, 1] <= self.y_lim[1])
+    #    hole_hit = np.abs(np.dot(rays_coll - self.c, self.plane)) < self.sze
+    #    # angles = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f)))
+    #    angle_good = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f))) < self.h_ang
+    #    return (near_slit & hole_hit & angle_good).astype(int) / (rays ** 2).sum(axis=1)
+        # True is when it passes through the slit
+
+    def ray_pass(self, dirs, intersect):
+        rays_coll = intersect
         # TODO: See where points are on collimator plane
         near_slit = (rays_coll[:, 0] >= self.x_lim[0]) & (rays_coll[:, 0] <= self.x_lim[1]) & \
                     (rays_coll[:, 1] >= self.y_lim[0]) & (rays_coll[:, 1] <= self.y_lim[1])
         hole_hit = np.abs(np.dot(rays_coll - self.c, self.plane)) < self.sze
         # angles = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f)))
         angle_good = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f))) < self.h_ang
-        return (near_slit & hole_hit & angle_good).astype(int) / (rays ** 2).sum(axis=1)
+        return (near_slit & hole_hit & angle_good).astype(int)
         # True is when it passes through the slit
 
 
