@@ -1,9 +1,6 @@
 import numpy as np
 import pickle
 
-det_to_col = 24  # cm, from face
-det_thick = 7.5  # cm
-source_to_col = 13  # cm, front face
 det_pxl_size = 0.4  # cm, i.e. mm
 
 # x is beam direction -> +x
@@ -41,9 +38,6 @@ diff_dist = np.diff(projected_range,
                     prepend=all_ranges['Projected'][all_ranges['Energy'] == 8])
 rel_dist = diff_dist/im_pxl_size  # how much does it contribute to the kernel i.e. weights
 wgt = rel_dist
-
-PMMA_C = 5  # C5O2H8
-PMMA_O = 2
 
 initial_bin = np.ceil(np.max(projected_range/im_pxl_size))  # High Energy side
 bins_kernel = np.int(initial_bin - np.floor(np.min(projected_range/im_pxl_size)))
