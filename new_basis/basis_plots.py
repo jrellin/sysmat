@@ -2,6 +2,7 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 
+# angular polynomials generated here
 with open("kernels.pkl", "rb") as fp:
     kernels = pickle.load(fp)  # will give kernel size in x
 
@@ -34,7 +35,7 @@ yld_Oxy692 = [None] * kern_sze
 yld_Oxy613 = [None] * kern_sze
 
 yld_OxyTot = [None] * kern_sze
-bas_OxyTot = [None] * kern_sze
+bas_OxyTot = None
 bas_OxyTotPoly = [None] * kern_sze
 
 # Oxygen
@@ -56,7 +57,7 @@ for i in np.arange(kern_sze):
     yld_Oxy613[i] = bas_Oxy613(costh)
 
     bas_OxyTot = bas_Oxy712 + bas_Oxy692 + bas_Oxy613
-    bas_OxyTotPoly[i] = bas_OxyTot
+    bas_OxyTotPoly[i] = bas_OxyTot * (1/frac_O) * (1/N_dens) * (1/im_pxl_sze)
     yld_OxyTot[i] = bas_OxyTot(costh)
 
 
@@ -112,10 +113,12 @@ plt.close(fig)
 # Carbon
 figC, (ax_raw, ax_norm) = plt.subplots(1, 2, figsize=(12, 4))
 yld_C = [None] * kern_sze
+bas_CTotPoly = [None] * kern_sze
 for i in np.arange(kern_sze):
     wgt_C = N_dens * im_pxl_sze * frac_C * (kernels['Carbon']['sig'][i]) \
               * np.array([1, 0, kernels['Carbon']['a20'][i], 0, kernels['Carbon']['a40'][i], 0, 0])
     bas_C = np.polynomial.Legendre(wgt_C)
+    bas_CTotPoly[i] = bas_C * (1/frac_C) * (1/N_dens) * (1/im_pxl_sze)
     yld_C[i] = bas_C(costh)
     ax_raw.plot(degrees, yld_C[i], label=str(int(avg_energies[i])) + ' MeV')
     ax_norm.plot(degrees, yld_C[i]/np.max(yld_C[i]), label=str(int(avg_energies[i])) + ' MeV')
@@ -162,5 +165,16 @@ ax_normf.legend(loc='best')
 ax_normf.set_title('Normalized Probability for Oxygen and Carbon in PMMA')
 
 plt.tight_layout()
-plt.savefig('images/prob_emissions.png')
+# plt.savefig('images/prob_emissions.png')
+
+basis = {
+    'Oxygen': bas_OxyTotPoly,
+    'Carbon': bas_CTotPoly,
+    'Energies': avg_energies
+}
+
+# with open('physics_basis.pkl', 'wb') as output:
+#    # Pickle dictionary using protocol 0.
+#    pickle.dump(basis, output)
+
 plt.show()
