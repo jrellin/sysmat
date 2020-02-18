@@ -23,15 +23,15 @@ class Collimator(object):
         if type not in self._sup_aper:
             raise ValueError('Aperture type {f} is not supported. '
                              'Supported aperture types: {a}'.format(f=type, a=str(self._sup_aper)[1:-1]))
-        if type is 'slit':
+        if type == 'slit':
             self.apertures.append(Slit(**kwargs))
-        if type is 'pinhole':
+        if type == 'pinhole':
             self.apertures.append(Pinhole(**kwargs))
 
     # def ray_trace(self, det1=48, det2=48, *args):
     def ray_trace(self, *args):
         # proj = np.ones([det2, det1])  # det1 = x, det2 = y
-        proj = np.zeros([48, 48])
+        # proj = np.zeros([48, 48])
         proj = np.zeros(48*48)
         ray_dirs, ray_int, r_sq = self.ray_gen(*args)
         for aper in self.apertures:

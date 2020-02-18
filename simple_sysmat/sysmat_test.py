@@ -1,6 +1,6 @@
 # from simple_system import *
-
-import simple_system as ss
+from simple_sysmat import simple_system as ss
+# import simple_system as ss
 import matplotlib.pyplot as plt
 import time
 import numpy as np

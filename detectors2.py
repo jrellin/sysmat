@@ -6,7 +6,7 @@ from scipy.sparse import lil_matrix
 
 
 class Detector(object):
-    mu = 100.0  # mm^2/g mass attenuation coeffecient
+    mu = 100.0  # mm^2/g mass attenuation coefficient
     rho = 1/1000.0  # density g/mm^3
 
     def __init__(self, center=(0, 0, 100),  # mm Coordinates of the center face of
@@ -50,7 +50,7 @@ class Detector(object):
 
         return centers.reshape(self.npix[0], self.npix[1]) + (back * (-1) * self.thickness * self.norm)
 
-    def crystal_intersections(self, emission_pt, emission_dir, step=0.1, prefactor = 1):  # step in mm
+    def crystal_intersections(self, emission_pt, emission_dir, step=0.1, prefactor=1):  # step in mm
 
         r_o = (self.f_plane - np.dot(emission_pt, self.norm)) / (np.dot(emission_dir, self.norm) * 1.0)
         omegas = np.arange(
