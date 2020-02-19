@@ -194,8 +194,10 @@ class Sources(object):
         ax0_vec = np.outer(ax0_scalars, self.s_ax[0])
         ax1_vec = np.outer(ax1_scalars, self.s_ax[1])
 
-        centers = (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3)
+        # centers = (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3)
+        centers = (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3)
         # c1 = centers[:, np.newaxis]
+        return centers
 
 
 def norm(array):
