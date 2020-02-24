@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 from simple_sysmat.simple_system import Detector as det
+from simple_sysmat.simple_system import Sources
 
 # +x -> beam
 with open("physics_basis.pkl", "rb") as fp:
@@ -29,7 +30,16 @@ i_y = 51
 n_x = 48
 n_y = 48
 
-detector = det(center=(0, 0, source_to_col+det_to_col+col_thick))
+detector = det(center=(0, 0, source_to_col+det_to_col+col_thick))  # source plane contains (0, 0, 0)
+src = Sources(voxel_size=im_pix_sze, npix_1=i_x, npix_2=i_y)  # cm not mm!!!
 end_pts = detector.face_pts()
+
+em_pts = src.source_pts()
+tot_em_pts = em_pts.shape[0]
+tot_end_pts = end_pts.shape[0]
+
+convolved_sys_mat = np.zeros([tot_em_pts, tot_end_pts])
+for em_pt in em_pts:  # i.e. rows
+    pass
 
 
