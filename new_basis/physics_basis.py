@@ -45,6 +45,6 @@ for em_pt in em_pts:  # i.e. rows
     rays = em_pt - end_pts  # rays from source points to detector
     norm = np.sqrt(np.sum(rays**2, axis=1))
     angles[em_pt, :] = np.arccos(rays[:, 0]/norm)  # beam is in x-dir
-    
+
 
 
