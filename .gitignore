@@ -1,1 +1,8 @@
 /simple_sysmat/.idea/
+/new_basis/.idea/
+.DS_Store
+.ipynb_checkpoints/
+dict2table_test.ipynb
+new_basis/.DS_Store
+simple_sysmat/__pycache__/
+.idea/misc.xml
