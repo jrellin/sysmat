@@ -161,8 +161,9 @@ class Detector(object):
         ax0_vec = np.outer(ax0_scalars, self.axes[0])
         ax1_vec = np.outer(ax1_scalars, self.axes[1])
 
-        return (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3) + self.c
+        return (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3) + self.c
 
+        # return (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3) + self.c
         # return centers.reshape(self.npix[0], self.npix[1]) + (back * (-1) * self.thickness * self.norm)
         # return centers.reshape(self.npix[0], self.npix[1], 3) + (back * (-1) * self.thickness * self.norm)
 

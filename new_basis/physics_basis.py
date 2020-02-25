@@ -16,12 +16,12 @@ def norm(array):
 
 
 # Physical Constants
-det_to_col = 24  # cm, from face
-col_thick = 7.5  # cm
+det_to_col = 240  # mm, from face
+col_thick = 75  # mm
 
 # Constant Parameters
-source_to_col = 13  # cm, front face
-im_pix_sze = 0.1  # cm
+source_to_col = 130  # mm, front face
+im_pix_sze = 1  # mm
 k_y = 2  # 2 * k_y + 1 is kernel size in y
 
 # Reproduce John's Code
@@ -39,7 +39,12 @@ tot_em_pts = em_pts.shape[0]
 tot_end_pts = end_pts.shape[0]
 
 convolved_sys_mat = np.zeros([tot_em_pts, tot_end_pts])
+angles = np.zeros([tot_em_pts, tot_end_pts])
+
 for em_pt in em_pts:  # i.e. rows
-    pass
+    rays = em_pt - end_pts  # rays from source points to detector
+    norm = np.sqrt(np.sum(rays**2, axis=1))
+    angles[em_pt, :] = np.arccos(rays[:, 0]/norm)  # beam is in x-dir
+    
 
 
