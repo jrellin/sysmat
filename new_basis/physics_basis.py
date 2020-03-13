@@ -3,6 +3,8 @@ import pickle
 from simple_sysmat.simple_system import Detector as det
 from simple_sysmat.simple_system import Sources
 
+# TODO: THIS IS WHERE WORK NEEDS TO BE DONE
+
 # +x -> beam
 with open("physics_basis.pkl", "rb") as fp:
     basis = pickle.load(fp)
@@ -22,7 +24,7 @@ col_thick = 75  # mm
 # Constant Parameters
 source_to_col = 130  # mm, front face
 im_pix_sze = 1  # mm
-k_y = 2  # 2 * k_y + 1 is kernel size in y
+kwind_y = 2  # 2 * kwind_y + 1 is kernel size in y
 
 # Reproduce John's Code
 i_x = 151
@@ -30,8 +32,14 @@ i_y = 51
 n_x = 48
 n_y = 48
 
+# This is a buffer needed for the convolution in both dimensions
+k_x = 4  # 3 emit from physics, the last mm is below the threshold
+k_y = 2 * kwind_y + 1
+p_y = ((k_y - (i_y % k_y)) % k_y)  # prepends
+p_x = (k_x - 1)
+
 detector = det(center=(0, 0, source_to_col+det_to_col+col_thick))  # source plane contains (0, 0, 0)
-src = Sources(voxel_size=im_pix_sze, npix_1=i_x, npix_2=i_y)  # cm not mm!!!
+src = Sources(voxel_size=im_pix_sze, npix_1=i_x, npix_2=i_y)  # mm!!!
 end_pts = detector.face_pts()
 
 em_pts = src.source_pts()

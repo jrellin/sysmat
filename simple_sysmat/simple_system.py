@@ -175,8 +175,12 @@ class Sources(object):
                  npix_2=200,
                  # npix_3=200,  # For 3D source space
                  sax_1=(1, 0, 0),  # (s)ource (ax)is
-                 sax_2=(0, 1, 0)
-                 # ,sax_3=(0,0,1)  # For 3D source space
+                 sax_2=(0, 1, 0),
+                 # sax_3=(0,0,1),  # For 3D source space
+                 prepend_n_ax1=0,
+                 prepend_n_ax2=0  # In the negative direction, this means down and to the left
+                 # , append_n_ax1 = 0,  # In the positive direction, this means up and to the right
+                 # , append_n_ax2 = 0
                  ):
         self.sc = center
         self.vsze = voxel_size
@@ -184,16 +188,17 @@ class Sources(object):
 
         self.s_ax = np.array([sax_1, sax_2])  # np.array([sax_1, sax_2, sax_3])
         # self.sax3 = sax_3
+        self.prepend = np.array([prepend_n_ax1, prepend_n_ax2])
 
     def source_pts(self):  # This could be amended for 3D easily
-        ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5),
+        ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5) - self.prepend[0],
                                 (self.npix[0] / 2. + 0.5))
 
-        ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5),
-                                (self.npix[1] / 2. + 0.5))[::-1]
+        ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5) - self.prepend[1],
+                                (self.npix[1] / 2. + 0.5))  # [::-1]
 
         ax0_vec = np.outer(ax0_scalars, self.s_ax[0])
-        ax1_vec = np.outer(ax1_scalars, self.s_ax[1])
+        ax1_vec = np.outer(ax1_scalars[::-1], self.s_ax[1])
 
         # centers = (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3)
         centers = (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3)
