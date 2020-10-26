@@ -39,7 +39,7 @@ p_y = ((k_y - (i_y % k_y)) % k_y)  # prepends
 p_x = (k_x - 1)
 
 detector = det(center=(0, 0, source_to_col+det_to_col+col_thick))  # source plane contains (0, 0, 0)
-src = Sources(voxel_size=im_pix_sze, npix_1=i_x, npix_2=i_y)  # mm!!!
+src = Sources(voxel_size=im_pix_sze, npix_1=i_x, npix_2=i_y, prepend_n_ax1=p_x, prepend_n_ax2=p_y)  # mm!!!
 end_pts = detector.face_pts()
 
 em_pts = src.source_pts()
