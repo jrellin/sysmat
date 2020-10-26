@@ -50,12 +50,13 @@ class Collimator(object):
         for aper in self.apertures:
             proj += aper.ray_pass(ray_dirs, ray_int)
         # return ((proj >= 1)/r_sq).reshape(proj_size), ray_int
-        return ((proj >= 1) / r_sq), ray_int
+        return ((proj >= 1) / r_sq) * np.sin(-ray_dirs[:, 2]), ray_int
 
     def ray_gen(self, end_pts, em_pt):
         rays = 1.0 * (end_pts - em_pt)
         dirs = rays / np.sqrt((rays ** 2).sum(axis=1))[:, np.newaxis]
-        mag = -(self.colp[2] - em_pt[2]) / dirs[:, 2]  # fixed probably
+        mag = (self.colp[2] - em_pt[2]) / dirs[:, 2]  # fixed probably
+        print("Mag: ", mag[:5])
         intersection = em_pt + dirs * mag[:, np.newaxis]
         return dirs, intersection, (rays ** 2).sum(axis=1)  # Directions, intersection with coll, r^2
 
@@ -175,22 +176,16 @@ class Sources(object):
         # self.sax3 = sax_3
         self.prepend = np.array([prepend_n_ax1, prepend_n_ax2])
 
-    def source_pts(self, reshape=True):  # This could be amended for 3D easily
+    def source_pts(self):  # This could be amended for 3D easily
         ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5) - self.prepend[0],
-                                (self.npix[0] / 2. + 0.5))
+                                (self.npix[0] / 2. + 0.5)) * self.vsze
 
         ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5) - self.prepend[1],
                                 (self.npix[1] / 2. + 0.5))  # [::-1]
 
         ax0_vec = np.outer(ax0_scalars, self.s_ax[0])
         ax1_vec = np.outer(ax1_scalars[::-1], self.s_ax[1])
-
-        # centers = (ax0_vec[:, np.newaxis] + ax1_vec[np.newaxis, :]).reshape(-1, 3)
-        if reshape:
-            centers = (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3)
-        else:
-            centers = (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :])
-        return centers
+        return (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]) + self.sc
 
 
 def norm(array):
