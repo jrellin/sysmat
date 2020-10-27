@@ -54,7 +54,6 @@ class Collimator(object):
         if aperture == 'pinhole':
             self.apertures.append(Pinhole(**kwargs))
 
-    # def ray_trace(self, det1=48, det2=48, *args):
     def ray_trace(self, *args, subsampling=0, det_pixels=np.array([48, 48])):
         proj_size = (2**subsampling) * det_pixels
         proj = np.zeros(np.prod(proj_size))
@@ -117,13 +116,13 @@ class Slit(object):
 
     def ray_pass(self, dirs, intersect):
         rays_coll = intersect
-        # TODO: See where points are on collimator plane
         near_slit = (rays_coll[:, 0] >= self.x_lim[0]) & (rays_coll[:, 0] <= self.x_lim[1]) & \
                     (rays_coll[:, 1] >= self.y_lim[0]) & (rays_coll[:, 1] <= self.y_lim[1])
         hole_hit = np.abs(np.dot(rays_coll - self.c, self.plane)) < self.sze
         angle_good = np.arctan(np.abs(np.dot(dirs, self.plane)/np.dot(dirs, self.f))) < self.h_ang
         return near_slit & hole_hit & angle_good
         # True is when it passes through the slit
+        # TODO: near_slit must be modified if slits have ends that do not terminate into another slit or the edge
 
 
 class Detector(object):
@@ -207,19 +206,78 @@ def norm(array):
     return arr/np.sqrt(np.dot(arr, arr))
 
 
+def ang2arr(angle_degrees):  # This means the beam-axis (+x) is the reference point for slit angles
+    angle = np.deg2rad(angle_degrees)
+    return np.array([np.cos(angle), np.sin(angle)])
+
+
 def main():
     start = time.time()
     system = Imager()
+
+    # Vertical Slits
     slit1 = np.array([0, 0, 0])
     system.collimator.add_aperture('slit', size=2, loc=system.collimator.colp + slit1)
 
-    slit2 = np.array([0, 0, 0])
-    system.collimator.add_aperture('slit', size=2, slit_ax=(1, 0, 0), loc=system.collimator.colp + slit2)
+    h_offset = 48   # horizontal distance between vertical slits
+    slit2 = np.array([h_offset, 0, 0])
+    system.collimator.add_aperture('slit', loc=system.collimator.colp + slit2)
+    system.collimator.add_aperture('slit', loc=system.collimator.colp - slit2)
 
-    endpts, det_pix, subsample = system.detector.face_pts(subsample=4)
+    # Outside slits
+    joint = (203.2/2) - 50.39  # y -coordinate of slit connection, 60 degree slits
+    slit3 = np.array([h_offset, joint, 0])  # right side
+    slit4 = np.array([h_offset, -joint, 0])  # right side
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(60.), x_min=h_offset, loc=system.collimator.colp + slit3)
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(-60.), x_min=h_offset, loc=system.collimator.colp + slit4)
+
+    # Left side outside slits
+    ls3 = np.array([-h_offset, joint, 0])
+    ls4 = np.array([-h_offset, -joint, 0])
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(120.), x_max=-h_offset, loc=system.collimator.colp + ls3)
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(-120.), x_max=-h_offset, loc=system.collimator.colp + ls4)
+
+    # y = 0 slits
+    rtd_slits = np.array([h_offset, 0, 0])  # (r)ight (t)hirty (d)egree slits
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(30), x_min=h_offset, loc=system.collimator.colp + rtd_slits)
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(-30), x_min=h_offset, loc=system.collimator.colp + rtd_slits)
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(150), x_max=-h_offset,
+                                   loc=system.collimator.colp - rtd_slits)
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(-150), x_max=-h_offset,
+                                   loc=system.collimator.colp - rtd_slits)
+
+    # Inner Slits
+    isv_offset = (203.2/2) - 80.94  # inner slit vertical offsets
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(45),
+                                   x_min=-h_offset, x_max=h_offset,
+                                   loc=system.collimator.colp + np.array([h_offset, isv_offset, 0]))
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(-45),
+                                   x_min=-h_offset, x_max=h_offset,
+                                   loc=system.collimator.colp + np.array([h_offset, -isv_offset, 0]))
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(-45),
+                                   x_min=-h_offset, x_max=h_offset,
+                                   loc=system.collimator.colp + np.array([-h_offset, isv_offset, 0]))
+    system.collimator.add_aperture('slit', slit_ax=ang2arr(45),
+                                   x_min=-h_offset, x_max=h_offset,
+                                   loc=system.collimator.colp + np.array([-h_offset, -isv_offset, 0]))
+
+    # system.collimator.add_aperture('slit', size=2, slit_ax=(0, 1, 0), x_max=0, loc=system.collimator.colp - slit2)
+
+    # def __init__(self, size=2., loc=(0., 0., 0.),  # in mm relative to collimator center
+    #             cen_ax=(0., 0., 1.),  # normal to opening pointing toward object space
+    #             slit_ax=(0., 1., 0.),  # points along opening
+    #             aper_angle=20.0,  # Full opening angle in degrees
+    #             # chan_length=0,
+    #             x_min=-np.inf,
+    #             x_max=np.inf,
+    #             y_min=-np.inf,
+    #             y_max=np.inf,
+    #             ):
+
+    endpts, det_pix, subsample = system.detector.face_pts(subsample=4)  # 4 seems best between speed and memory
     # print('Endpts (10): ', endpts[:5])
 
-    em_pt = np.array([0, 0, 0])  # TODO: What is GOING ON?
+    em_pt = np.array([0, 0, 900])
 
     projection, ray_int = system.collimator.ray_trace(endpts, em_pt, subsampling=subsample, det_pixels=det_pix)
     new_projection = projection.reshape((2**subsample) * det_pix)
@@ -229,14 +287,20 @@ def main():
                                                  2 ** subsample).mean(axis=(1, 3))
     print('It took ' + str(time.time() - start) + ' seconds.')
     # plt.imshow(np.log(projection).T,cmap='Reds')
-    fig, (ax1, ax2) = plt.subplots(1, 2)
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
     ax1.scatter(ray_int[:, 0], ray_int[:, 1])
     ax1.set_xlim((-100, 100))
     ax1.set_ylim((-100, 100))
+    ax1.set_ylabel('mm')
+    ax1.set_xlabel('mm')
+    ax1.set_title('Rays cast from {a} cm'.format(a=(em_pt - system.collimator.colp)/10))
     ax1.set_aspect('equal')
     # im = ax2.imshow(new_projection, cmap='viridis', interpolation='nearest')
     im = ax2.imshow(averaged_projection, cmap='viridis', interpolation='nearest')
-    ax2.set_aspect('equal')
+    ax2.set_aspect('auto')
+    ax2.set_title('Projection')
+    ax2.set_xticks([], [])
+    ax2.set_yticks([], [])
     fig.colorbar(im, ax=ax2)
     plt.show()
     # plt.imshow(projection, cmap='gray')
