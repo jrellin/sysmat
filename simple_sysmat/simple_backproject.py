@@ -17,6 +17,18 @@ class Imager(object):
         self.collimator = Collimator()
         self.detector = Detector()
         self.sources = Sources()
+        self.subsample = 0
+
+    def _point_response(self, face_pts, em_pt):
+        projection = self.collimator.ray_trace(face_pts, em_pt,
+                                               subsampling=self.detector.subsamples, det_pixels=self.detector.npix)[0]
+        # if not self.detector.subsamples:
+        #     return projection
+
+        num_subpixels = 2 ** self.detector.subsamples
+        m, n = num_subpixels * self.detector.npix
+        return projection.reshape(m // num_subpixels, num_subpixels, n // num_subpixels,
+                                  num_subpixels).mean(axis=(1, 3)).ravel()
 
 
 class Collimator(object):
@@ -56,7 +68,7 @@ class Collimator(object):
         rays = 1.0 * (end_pts - em_pt)
         dirs = rays / np.sqrt((rays ** 2).sum(axis=1))[:, np.newaxis]
         mag = (self.colp[2] - em_pt[2]) / dirs[:, 2]  # fixed probably
-        print("Mag: ", mag[:5])
+        # print("Mag: ", mag[:5])
         intersection = em_pt + dirs * mag[:, np.newaxis]
         return dirs, intersection, (rays ** 2).sum(axis=1)  # Directions, intersection with coll, r^2
 
@@ -133,12 +145,14 @@ class Detector(object):
         self.axes = np.array([ax_1, ax_2])
 
         self.f_plane = np.dot(self.c, self.norm)
+        self.subsamples = 0
         # unused for now
-        self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size[0]
-        self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size[1]
+        # self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size[0]
+        # self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size[1]
 
     def face_pts(self, back=False, subsample=0):  # back is True means back plane
         subpixels = 2 ** subsample
+        self.subsamples = subpixels
         ax0_scalars = np.arange((-self.npix[0]/2. + 0.5) * subpixels,
                                 (self.npix[0]/2. + 0.5) * subpixels) * self.pix_size[0]/subpixels
 
@@ -177,11 +191,11 @@ class Sources(object):
         self.prepend = np.array([prepend_n_ax1, prepend_n_ax2])
 
     def source_pts(self):  # This could be amended for 3D easily
-        ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5) - self.prepend[0],
-                                (self.npix[0] / 2. + 0.5)) * self.vsze
+        ax0_scalars = (np.arange((-self.npix[0] / 2. + 0.5),
+                                (self.npix[0] / 2. + 0.5)) - self.prepend[0]) * self.vsze
 
-        ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5) - self.prepend[1],
-                                (self.npix[1] / 2. + 0.5))  # [::-1]
+        ax1_scalars = (np.arange((-self.npix[1] / 2. + 0.5),
+                                 (self.npix[1] / 2. + 0.5))[::-1] - self.prepend[1]) * self.vsze  # [::-1]
 
         ax0_vec = np.outer(ax0_scalars, self.s_ax[0])
         ax1_vec = np.outer(ax1_scalars[::-1], self.s_ax[1])
@@ -202,7 +216,7 @@ def main():
     slit2 = np.array([0, 0, 0])
     system.collimator.add_aperture('slit', size=2, slit_ax=(1, 0, 0), loc=system.collimator.colp + slit2)
 
-    endpts, det_pix, subsample = system.detector.face_pts(subsample=2)
+    endpts, det_pix, subsample = system.detector.face_pts(subsample=4)
     # print('Endpts (10): ', endpts[:5])
 
     em_pt = np.array([0, 0, 0])  # TODO: What is GOING ON?
@@ -210,9 +224,9 @@ def main():
     projection, ray_int = system.collimator.ray_trace(endpts, em_pt, subsampling=subsample, det_pixels=det_pix)
     new_projection = projection.reshape((2**subsample) * det_pix)
     m, n = new_projection.shape
-    print("M: ", m, ". N: ", n)
+    # print("M: ", m, ". N: ", n)
     averaged_projection = new_projection.reshape(m//(2 ** subsample), 2 ** subsample, n//(2 ** subsample),
-                                                 2 ** subsample)
+                                                 2 ** subsample).mean(axis=(1, 3))
     print('It took ' + str(time.time() - start) + ' seconds.')
     # plt.imshow(np.log(projection).T,cmap='Reds')
     fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -221,7 +235,7 @@ def main():
     ax1.set_ylim((-100, 100))
     ax1.set_aspect('equal')
     # im = ax2.imshow(new_projection, cmap='viridis', interpolation='nearest')
-    im = ax2.imshow(averaged_projection.mean(axis=(1, 3)), cmap='viridis', interpolation='nearest')
+    im = ax2.imshow(averaged_projection, cmap='viridis', interpolation='nearest')
     ax2.set_aspect('equal')
     fig.colorbar(im, ax=ax2)
     plt.show()
