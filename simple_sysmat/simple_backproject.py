@@ -152,11 +152,10 @@ class Detector(object):
     def face_pts(self, back=False, subsample=0):  # back is True means back plane
         subpixels = 2 ** subsample
         self.subsamples = subpixels
-        ax0_scalars = np.arange((-self.npix[0]/2. + 0.5) * subpixels,
-                                (self.npix[0]/2. + 0.5) * subpixels) * self.pix_size[0]/subpixels
-
-        ax1_scalars = np.arange((-self.npix[1]/2. + 0.5) * subpixels,
-                                (self.npix[1]/2. + 0.5) * subpixels)[::-1] * self.pix_size[1]/subpixels
+        ax0_scalars = np.arange((-self.npix[0] * subpixels) / 2 + 0.5,
+                                (self.npix[0] * subpixels) / 2 + 0.5)[::-1] * self.pix_size[1] / subpixels
+        ax1_scalars = np.arange((-self.npix[1] * subpixels)/2 + 0.5,
+                                (self.npix[1] * subpixels)/2 + 0.5)[::-1] * self.pix_size[1] / subpixels
         # Reversed ordering
 
         ax0_vec = np.outer(ax0_scalars, self.axes[0])
@@ -191,7 +190,7 @@ class Sources(object):
 
     def source_pts(self):  # This could be amended for 3D easily
         ax0_scalars = (np.arange((-self.npix[0] / 2. + 0.5),
-                                (self.npix[0] / 2. + 0.5)) - self.prepend[0]) * self.vsze
+                                 (self.npix[0] / 2. + 0.5)) - self.prepend[0]) * self.vsze
 
         ax1_scalars = (np.arange((-self.npix[1] / 2. + 0.5),
                                  (self.npix[1] / 2. + 0.5))[::-1] - self.prepend[1]) * self.vsze  # [::-1]
@@ -288,6 +287,9 @@ def main():
     print('It took ' + str(time.time() - start) + ' seconds.')
     # plt.imshow(np.log(projection).T,cmap='Reds')
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
+    print("ray_int shape", ray_int.shape)
+    print("ray_int first pt:", ray_int[0])
+    print("ray_int last pt:", ray_int[-1])
     ax1.scatter(ray_int[:, 0], ray_int[:, 1])
     ax1.set_xlim((-100, 100))
     ax1.set_ylim((-100, 100))
