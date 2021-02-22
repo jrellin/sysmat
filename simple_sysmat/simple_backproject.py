@@ -20,9 +20,11 @@ class Imager(object):
         self.detector = Detector()
         self.sources = Sources()
         self.subsample = 0  # I need to go through and change all of these
+        self.sample_area = np.prod(self.detector.pix_size)
 
     def generate_system_response(self, subsample=0):  # should do this with kwargs
         self.subsample = subsample
+        self.sample_area = np.prod(self.detector.pix_size/(2 ** subsample))
         save_fname = os.path.join(os.getcwd(), datetime.now().strftime("%Y-%m-%d-%H%M")
                                   + '_SP' + str(subsample) + '.h5')
         src_points = np.prod(self.sources.npix)
@@ -50,7 +52,8 @@ class Imager(object):
     def _point_response(self, face_pts, em_pt):
         # print("_pt_response subsamples:", self.detector.subsamples)
         projection = self.collimator.ray_trace(face_pts, em_pt,
-                                               subsampling=self.subsample, det_pixels=self.detector.npix)[0]
+                                               subsampling=self.subsample,
+                                               det_pixels=self.detector.npix)[0] * self.sample_area  # Added 2/16
         num_subpixels = 2 ** self.subsample
         m, n = num_subpixels * self.detector.npix
         return projection.reshape(m // num_subpixels, num_subpixels, n // num_subpixels,
@@ -83,13 +86,13 @@ class Collimator(object):
     def ray_trace(self, *args, subsampling=0, det_pixels=np.array([48, 48])):
         proj_size = (2 ** subsampling) * det_pixels
         proj = np.zeros(np.prod(proj_size))
-        # print("Ray trace subsampling: ", subsampling)
-        # print("Proj size: ", proj_size)
+
         ray_dirs, ray_int, r_sq = self.ray_gen(*args)
         for aper in self.apertures:
             proj += aper.ray_pass(ray_dirs, ray_int)
-        # return ((proj >= 1)/r_sq).reshape(proj_size), ray_int
-        return ((proj >= 1) / r_sq) * np.sin(-ray_dirs[:, 2]), ray_int
+        # return ((proj >= 1) / r_sq) * np.sin(-ray_dirs[:, 2]), ray_int  # Where did that np.sin come from?
+        return ((proj >= 1) / (4 * np.pi * r_sq)) * np.abs(ray_dirs[:, 2]), ray_int
+        # TODO (2/16/21): Does this fix things?
 
     def ray_gen(self, end_pts, em_pt):
         rays = 1.0 * (end_pts - em_pt)
@@ -140,7 +143,7 @@ class Slit(object):
 
         self.a = norm(slit_ax)  # axis of slit
         self.h_ang = np.deg2rad(aper_angle / 2.)  # Half of the opening angle of the slit in radians
-        self.plane = np.cross(self.a, self.f)  # Vector that is in direction of the slit opening
+        self.plane = np.cross(self.a, self.f)  # Vector that is in direction of the slit width
 
     def ray_pass(self, dirs, intersect):
         rays_coll = intersect
@@ -180,7 +183,7 @@ class Detector(object):
         subpixels = 2 ** subsample
         self.subsamples = subpixels
         ax0_scalars = np.arange((-self.npix[0] * subpixels) / 2 + 0.5,
-                                (self.npix[0] * subpixels) / 2 + 0.5)[::-1] * self.pix_size[1] / subpixels
+                                (self.npix[0] * subpixels) / 2 + 0.5) * self.pix_size[0] / subpixels
         ax1_scalars = np.arange((-self.npix[1] * subpixels) / 2 + 0.5,
                                 (self.npix[1] * subpixels) / 2 + 0.5)[::-1] * self.pix_size[1] / subpixels
         # Reversed ordering
@@ -207,7 +210,7 @@ class Sources(object):
                  # , append_n_ax1 = 0,  # In the positive direction, this means up and to the right
                  # , append_n_ax2 = 0
                  ):
-        self.sc = center
+        self.sc = np.array(center)
         self.vsze = voxel_size
         self.npix = np.array((npix_1, npix_2))  # np.array((npix_1, npix_2, npix_3))
 
@@ -226,7 +229,8 @@ class Sources(object):
         ax1_vec = np.outer(ax1_scalars, self.s_ax[1])
         return (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]) + self.sc
 
-    def source_pt_iterator(self):  # For me this meant starting from upper left and going right and down each row
+    def source_pt_iterator(self):
+        # For me this meant starting from upper left (facing collimator) and going right then down each row
         for ax1 in (np.arange((-self.npix[1] / 2. + 0.5),
                               (self.npix[1] / 2. + 0.5))[::-1] - self.prepend[1]) * self.vsze:
             for ax0 in (np.arange((-self.npix[0] / 2. + 0.5),
@@ -384,7 +388,8 @@ def main():
                                    loc=system.collimator.colp + np.array([-h_offset, -isv_offset, 0]))
 
     # ====== Configuring Source ======
-    system.sources.npix = np.array([150, 50])
+    system.sources.npix = np.array([201, 51])  # previous to 2/16/2021, original keep [150,50]
+    # system.sources.sc = np.array([0, 0, 100])  # TODO (2/16/2021): This is sanity check at far field
 
     # ====== Generate Response ======
     system.generate_system_response(subsample=4)
@@ -392,5 +397,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # test()
-    main()
+    test()
+    # main()

@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import time
 import numpy as np
 import tables
+# This is meant to redesign the collimator, unrelated to apertures.py, detector_sytem.py, etc.
 
 
 class Sampler(object):
@@ -146,7 +147,7 @@ class Sampler(object):
             efficiencies[pos_num] = np.sum(ret)
             surface_area[pos_num] = np.count_nonzero(prev)/total_pts
 
-            if pos_num:  # i.e. 0th iteration
+            if pos_num:  # i.e. not 0th iteration
                 avg_cnrs[pos_num] = np.mean(0.5 * np.abs(ret - prev) /
                                             (np.sqrt(ret) + np.sqrt(prev)) + ((ret-prev) == 0))
             # TODO: As this is set up, this only looks at contrast along the beam axis. What about in other lines?
