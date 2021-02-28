@@ -2,8 +2,13 @@ import numpy as np
 
 
 class Collimator(object):
-    mu = 100.0  # mm^2/g mass attenuation coefficient
-    rho = 1/1000.0  # density g/mm^3
+    # mu = 100.0  # mm^2/g mass attenuation coefficient
+    # rho = 1 / 1000.0  # density g/mm^3
+
+    mu = 0.04038 * (10**2)  # mm^2/g
+    rho = 19.3 / (10**3)  # density g/mm^3
+    # mu/rho = 4.038 E-2 cm^2/g  (Tungsten at 4 MeV), density = 19.3 g/cm^3
+
     _sup_aper = ('slit', 'pinhole')
 
     def __init__(self, container,
@@ -22,6 +27,8 @@ class Collimator(object):
 
         self.apertures = []
 
+        self.debug = 0
+
     def add_aperture(self, aperture, **kwargs):
         if aperture not in self._sup_aper:
             raise ValueError('Aperture type {f} is not supported. '
@@ -33,11 +40,12 @@ class Collimator(object):
 
     def _collimator_ray_trace(self, ray):
         ray_in_collimator = ray[np.abs(np.dot((ray - self.colp), self.norm)) < self.col_half_thickness]
-        attenuation = np.zeros(ray_in_collimator.size)
+        attenuation = np.zeros(ray_in_collimator.shape[0])
 
         for aper in self.apertures:
-            attenuation += aper.ray_pass(ray)
+            attenuation += aper.ray_pass(ray_in_collimator)
 
+        # return np.any(attenuation > 0)  # TODO: EXTREME, uncomment to only see pattern
         return np.exp(-self.rho * self.mu * np.sum((attenuation == 0)) * self.imager.sample_step)
 
 
@@ -51,9 +59,9 @@ class Slit(object):
                  x_max=np.inf,
                  y_min=-np.inf,
                  y_max=np.inf):
-        self.collimator = container  # TODO: Remember this is now done internally
+        self.collimator = container
         self.sze = size/2.  # Minimum half-width of aperture in mm aka channel width
-        self.c = np.array(loc) + self.collimator.coll_plane  # Some point along center slit plane
+        self.c = np.array(loc) + self.collimator.colp  # Some point along center slit plane
         self.f = np.array(cen_ax)  # Normal to plane of aperture (focus)
         self.tube = chan_length  # Total length
         self.x_lim = np.sort([x_min, x_max])
