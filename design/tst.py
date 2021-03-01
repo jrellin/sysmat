@@ -75,7 +75,8 @@ def see_projection_separate(sysmat_fname, choose_pt=0):
 
 
 def main():
-    filename = '/Users/justinellin/repos/sysmat/design/2021-02-24-0102_SP0.h5'
+    filename = '/home/proton/repos/sysmat/design/2021-02-28-2345_SP0.h5'
+    # filename = '/Users/justinellin/repos/sysmat/design/2021-02-24-0102_SP0.h5'
     # filename = '/Users/justinellin/repos/sysmat/design/2021-02-23-2351_SP0.h5'  # 3 points
     # see_projection_together(filename, choose_pt=2)
     see_projection_separate(filename, choose_pt=937)

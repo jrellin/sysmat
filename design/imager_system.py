@@ -6,7 +6,8 @@ import os
 from datetime import datetime
 from design.apertures import Collimator
 from design.sources import Sources
-from design.detector_system import Detector, Detector_System
+from design.detector_system import Detector_System
+from design.utils import generate_detector_centers_and_norms
 
 
 class Imager(object):
@@ -22,7 +23,6 @@ class Imager(object):
         self.subsample = 0  # I need to go through and change all of these
         self.sample_area = 0
         self.sample_step = 0.1  # in mm
-
 
     def set_collimator(self, **kwargs):
         self.collimator = Collimator(self, **kwargs)
@@ -172,23 +172,26 @@ def test(separate=True):
     layout = np.array([4, 4])
     system.detector_system.layout = layout  # could just put in __init__ of Detector_System
 
-    mod_spacing_dist = 50
-    scalars = np.arange(-layout[1]/2 + 0.5, layout[1]/2 + 0.5) * mod_spacing_dist
+    # mod_spacing_dist = 50  # Start of flat_detector_array
+    # scalars = np.arange(-layout[1]/2 + 0.5, layout[1]/2 + 0.5) * mod_spacing_dist
 
     x = np.array([1, 0, 0])
     y = np.array([0, 1, 0])
     x_displacement = 25.4
-    distance_mod_plane = np.array([0, 0, -260])  + (x_displacement * x)
+    distance_mod_plane = np.array([0, 0, -260]) + (x_displacement * x)
 
-    x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
-    y_vec = np.outer(scalars[::-1], y)  # Start top row relative to ground
+    # x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
+    # y_vec = np.outer(scalars[::-1], y)  # Start top row relative to ground
 
-    mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane
+    # mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane  # end flat array
 
-    for det_idx, det_center in enumerate(mod_centers):
-        # print("Set det_center: ", det_center)
-        system.create_detector(det_id=det_idx, center=det_center)
-    # print("Farthest Plane: ", system.detector_system.farthest_plane)
+    mod_centers, directions = generate_detector_centers_and_norms(layout, det_width=50, focal_length=350)
+
+    for det_idx, det_center in enumerate(mod_centers + distance_mod_plane):
+        print("Set det_center: ", det_center)
+        # system.create_detector(det_id=det_idx, center=det_center)  # This is for a flat detector array
+        system.create_detector(det_id=det_idx, center=det_center, det_norm=directions[det_idx])
+    print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
     em_pt = np.array([0, 0, 1500])
@@ -307,21 +310,40 @@ def main():
     # layout = np.array([4, 4])
     # system.detector_system.layout = layout  # could just put in __init__ of Detector_System
 
-    mod_spacing_dist = 50
-    scalars = np.arange(-system.detector_system.layout[1]/2 + 0.5, system.detector_system.layout[1]/2 + 0.5) *\
-              mod_spacing_dist
+    # mod_spacing_dist = 50  # Beginning of comment out  (1)
+    # scalars = np.arange(-system.detector_system.layout[1]/2 + 0.5, system.detector_system.layout[1]/2 + 0.5) *\
+    #           mod_spacing_dist
+
+    # x = np.array([1, 0, 0])
+    # distance_mod_plane = system.collimator.colp + np.array([0, 0, -130]) + (25.4 * x)  # shift of center
+
+    # x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
+    # y_vec = np.outer(scalars[::-1], np.array([0, 1, 0]))  # Start top row relative to ground
+
+    # mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane
+
+    # for det_idx, det_center in enumerate(mod_centers):
+    #     print("Set det_center: ", det_center)
+    #     system.create_detector(det_id=det_idx, center=det_center)  # End of comment out (1)
 
     x = np.array([1, 0, 0])
-    distance_mod_plane = system.collimator.colp +  np.array([0, 0, -130]) + (25.4 * x)  # shift of center
+    y = np.array([0, 1, 0])
+    x_displacement = 25.4
+    distance_mod_plane = np.array([0, 0, -260]) + (x_displacement * x)
 
-    x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
-    y_vec = np.outer(scalars[::-1], np.array([0, 1, 0]))  # Start top row relative to ground
+    # x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
+    # y_vec = np.outer(scalars[::-1], y)  # Start top row relative to ground
 
-    mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane
+    # mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane  # end flat array
 
-    for det_idx, det_center in enumerate(mod_centers):
+    mod_centers, directions = generate_detector_centers_and_norms(system.detector_system.layout,
+                                                                  det_width=50,
+                                                                  focal_length=350)
+
+    for det_idx, det_center in enumerate(mod_centers + distance_mod_plane):
         print("Set det_center: ", det_center)
-        system.create_detector(det_id=det_idx, center=det_center)
+        system.create_detector(det_id=det_idx, center=det_center, det_norm=directions[det_idx])
+    print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
     # system.sources.npix = np.array((151, 25))  # x (beam), vertical # this is for 1 mm spacing
@@ -342,5 +364,5 @@ def main():
 
 
 if __name__ == "__main__":
-    test(separate=False)
-    # main()
+    # test(separate=False)
+    main()

@@ -25,7 +25,8 @@ class Detector_System(object):  # detectors must be defined from upper left to u
         if not len(self.detectors) == 1:
             self.sample_area = self.detectors[0].pix_size
 
-        far_plane = (new_detector.norm[2] * new_detector.c[2]) + (np.sign(new_detector.c[2]) * new_detector.thickness)
+        # far_plane = (new_detector.norm[2] * new_detector.c[2]) + (np.sign(new_detector.c[2]) * new_detector.thickness)
+        far_plane = (new_detector.c[2]) + (np.sign(new_detector.c[2]) * (new_detector.thickness+new_detector.pix_size))
         if np.abs(far_plane) > self.farthest_plane:
             self.farthest_plane = far_plane
 
@@ -62,7 +63,6 @@ class Detector_System(object):  # detectors must be defined from upper left to u
 
             start_row = cur_det.mod_id[0] * cur_det.npix[0]
             start_col = cur_det.mod_id[1] * cur_det.npix[1]
-
 
             # self.imager.projection[start_row:(start_row+cur_det.npix[0]), start_col:(start_col+cur_det.npix[1])] += \
             self.projection[start_row:(start_row + cur_det.npix[0]), start_col:(start_col + cur_det.npix[1])] += \
