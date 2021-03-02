@@ -113,7 +113,7 @@ def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=F
     sysmat_file = load_h5file(sysmat_filename)
     sysmat = sysmat_file.root.sysmat[:].T
 
-    test_counts = sysmat.dot(test_img.ravel())
+    test_counts = sysmat.dot(test_img.ravel()).round()
     if sensitivity_norm:
         sens = np.sum(sysmat, axis=0)
     else:
@@ -149,6 +149,7 @@ def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=F
     plt.xticks(fontsize=14)
     plt.ylabel('[mm]', fontsize=14)
     plt.yticks(fontsize=14)
+    plt.title("Total Counts: " + np.format_float_scientific(int(recon.sum()), precision=2), fontsize=20)
 
     print("Total Counts: ", recon.sum())
 
