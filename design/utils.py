@@ -1,4 +1,6 @@
 import numpy as np
+from scipy.ndimage import gaussian_filter
+import time
 
 
 def generate_detector_centers_and_norms(layout, det_width=50, focal_length=350,
@@ -61,7 +63,64 @@ def norm_vectors_array(mat, axis=1):  # Must be rows of vectors
     return mat/np.sqrt(np.sum(mat**2, axis=axis, keepdims=True))
 
 
-def test():
+def compute_mlem(sysmat, counts, x_img_pixels, x_det_pixels=48, sensitivity=None,
+                 det_correction=None,
+                 nIterations=10,
+                 filter='gaussian',
+                 filt_sigma=1,
+                 **kwargs):
+
+    # print("Sysmat shape: ", sysmat.shape)
+    print("Total Measured Counts: ", counts.sum())  # TODO: Normalize?
+
+    tot_det_pixels, tot_img_pixels = sysmat.shape  # n_measurements, n_pixels
+    y_img_pixels = tot_img_pixels//x_img_pixels
+    y_det_pixels = tot_det_pixels//x_det_pixels
+
+    if sensitivity is None:
+        sensitivity = np.ones(tot_img_pixels)
+
+    if det_correction is None:
+        det_correction = np.ones(tot_det_pixels)
+
+    sensitivity = sensitivity.ravel()
+    det_correction = det_correction.ravel()
+
+    measured = counts.ravel() * det_correction
+
+    if nIterations == 1:
+        return sysmat.T.dot(measured)/sensitivity  # Backproject
+
+    recon_img = np.ones(tot_img_pixels)
+    recon_img_previous = np.zeros_like(recon_img)
+    diff = 10**6 * np.ones_like(recon_img)
+    outSum = np.zeros_like(recon_img)
+
+    if sensitivity is None:
+        sensitivity = np.ones(tot_img_pixels)
+
+    itrs = 0
+    t1 = time.time()
+
+    while itrs < nIterations:  # and (diff.sum() > 0.001 * counts.sum() + 100):
+        sumKlamb = sysmat.dot(recon_img)
+        outSum = (sysmat * measured[:, np.newaxis]).T.dot(1/sumKlamb)
+        recon_img *= outSum / sensitivity
+
+        if itrs > 5 and filter == 'gaussian':
+            recon_img = gaussian_filter(recon_img.reshape([y_img_pixels, x_img_pixels]), filt_sigma, **kwargs).ravel()
+            # gaussian_filter(input, sigma, order=0, output=None, mode='reflect', cval=0.0, truncate=4.0)
+
+        print('Iteration %d, time: %f sec' % (itrs, time.time() - t1))
+        diff = np.abs(recon_img - recon_img_previous)
+        print('Diff Sum: ', diff.sum())
+        recon_img_previous = recon_img
+        itrs += 1
+    print("Total Iterations: ", itrs)
+    return recon_img
+
+
+def test_orientation():
     from matplotlib import pyplot as plt
     from mpl_toolkits.mplot3d import Axes3D
 
@@ -81,4 +140,4 @@ def test():
 
 
 if __name__ == "__main__":
-    test()
+    test_orientation()
