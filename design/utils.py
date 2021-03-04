@@ -1,6 +1,15 @@
 import numpy as np
 from scipy.ndimage import gaussian_filter
 import time
+import tables
+
+
+def load_h5file(filepath):
+    if tables.is_hdf5_file(filepath):
+        h5file = tables.open_file(filepath, 'r')
+        return h5file
+    else:
+        raise ValueError('{fi} is not a hdf5 file!'.format(fi=filepath))
 
 
 def generate_detector_centers_and_norms(layout, det_width=50, focal_length=350,
@@ -163,7 +172,7 @@ def generate_PSFs(sysmat, buffer_xy, x_img_pixels, save_fname='psfs', **kwargs):
 
     width = buffer_xy[0] * 2  # X
     height = buffer_xy[1] * 2  # Y
-    pass
+    pass  # TODO: Model after gaussian_smooth_response but varying gaussian
 
 
 def make_gaussian(size, fwhm=1):  # f, center=None):
@@ -174,6 +183,7 @@ def make_gaussian(size, fwhm=1):  # f, center=None):
     can be thought of as an effective radius.
     """
 
+    size = (np.ceil(size)//2 * 2) + 1  # rounds size to nearest odd integer
     x = np.arange(0, size, 1, float)  # size should really be an odd integer
     y = x[:, np.newaxis]
 
@@ -221,12 +231,26 @@ def gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs):
     tot_img_pixels, tot_det_pixels = sysmat.shape  # n_pixels, n_measurements
 
     view = sysmat.T.reshape([tot_det_pixels, tot_img_pixels // x_img_pixels,  x_img_pixels])
+    # TODO: Might not need to transpose in this way
+    smoothed_reponse = np.copy(view)
+    print("View shape: ", view.shape)
 
     kern = make_gaussian(*args, **kwargs)  # size, fwhm=1
-    buffer = np.floor(kern.shape[0]/2)  # kernel is square for now
+    ksize = kern.shape[0]
+    print("Kern: ", kern)
+    buffer = int(np.floor(ksize/2))  # kernel is square for now
 
     # resmat * wgts[None,...]  where resmat is the (det_pxl, size, size) block
-    pass
+    for row in np.arange(buffer, (tot_img_pixels // x_img_pixels)-buffer):
+        if row % 10 == 0:
+            print("Row: ", row)
+        upper_edge = row-buffer  # of region to multiply with kernel
+        for col in np.arange(buffer, x_img_pixels-buffer):
+            left_edge = col-buffer
+            smoothed_reponse[:, row, col] = (view[:, upper_edge:upper_edge+ksize, left_edge:left_edge+ksize] *
+                                             kern[None, ...]).sum(axis=(1, 2))
+    # a1.swapaxes(0,2).swapaxes(0,1).reshape(m2.shape)
+    return smoothed_reponse.transpose((1, 2, 0)).reshape(sysmat.shape)
 
 
 def test_orientation():
@@ -248,5 +272,28 @@ def test_orientation():
     plt.show()
 
 
+def smooth_point_response(sysmat_filename, x_img_pixels, *args, h5file=True, **kwargs):
+    if h5file:
+        sysmat_file = load_h5file(sysmat_filename)
+        sysmat = sysmat_file.root.sysmat[:]
+    else:
+        sysmat = np.load(sysmat_filename)
+
+    size = args[0]
+    try:
+        fwhm = int(kwargs['fwhm']/2.355)
+    except:
+        fwhm = 1
+
+    print("Sysmat Shape:", sysmat.shape)
+    save_name = sysmat_filename[:sysmat_filename.find("SP")+3] + "_F" + str(fwhm) + "S" + str(size)
+    # gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs)
+    np.save(save_name, gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs))  # size, fwhm of kernel
+    if h5file:
+        sysmat_file.close()
+
+
 if __name__ == "__main__":
-    test_orientation()
+    # test_orientation()
+    smooth_point_response("/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy", 149, 7,
+                          h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
