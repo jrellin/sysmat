@@ -5,6 +5,7 @@ from scipy.ndimage import gaussian_filter1d
 from scipy.ndimage import gaussian_filter
 from matplotlib import pyplot as plt
 from design.utils import compute_mlem
+from design.utils import interpolate_system_response
 
 
 def load_h5file(filepath):
@@ -25,9 +26,10 @@ def see_projection_together(sysmat_fname, choose_pt=0):
     plt.show()
 
 
-def sensitivity_map(sysmat_fname, npix=(150, 50), pxl_sze= 1, dpix=(48, 48), correction=False):
-    sysmat_file = load_h5file(sysmat_fname)
-    sysmat = sysmat_file.root.sysmat[:]
+# def sensitivity_map(sysmat_fname, npix=(150, 50), pxl_sze= 1, dpix=(48, 48), correction=False):
+def sensitivity_map(sysmat, npix=(150, 50), pxl_sze=1, dpix=(48, 48), correction=False):
+    # sysmat_file = load_h5file(sysmat_fname)
+    # sysmat = sysmat_file.root.sysmat[:]
     print("System Shape: ", sysmat.shape)
 
     sens = np.sum(sysmat, axis=1).reshape([npix[1], npix[0]])
@@ -46,7 +48,7 @@ def sensitivity_map(sysmat_fname, npix=(150, 50), pxl_sze= 1, dpix=(48, 48), cor
     plt.ylabel('[mm]', fontsize=14)
 
     plt.colorbar(img, fraction=0.046 * (sysmat.shape[0]/sysmat.shape[1]), pad=0.04)
-    sysmat_file.close()
+    # sysmat_file.close()
     print("Total Sensitivity: ", np.sum(sysmat))
     print("Average Sensitivity: ", np.sum(sysmat)/np.prod(npix))
     plt.show()
@@ -77,9 +79,9 @@ def see_projection_separate(sysmat_fname, choose_pt=0):
     plt.show()
 
 
-def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=False, sensitivity_norm=True,
-              line_width=1, line_length=50, line_buffer=2, line_sigma=0.5, counts=10**6,
-              img_pxl_x=75, img_pxl_y=25, pxl_sze=2, **kwargs):
+def test_mlem(sysmat_filename, h5file = True, check_proj=False, sensitivity_norm=True, point_check=None, flood=False,
+              line_source=False, line_width=1, line_length=50, line_buffer=2, line_sigma=0.5,
+              counts=10**6, img_pxl_x=75, img_pxl_y=25, pxl_sze=2, **kwargs):
     # img_pxl_y = 25
     # img_pxl_x = 75
     if point_check is None:
@@ -105,13 +107,18 @@ def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=F
         test_img = (test_img/test_img.sum() * counts)
            #  \ (kern/kern.sum() * counts)
     else:
-        test_img[np.unravel_index(point_check, test_img.shape)] = counts
+        if flood:
+            test_img.fill(counts//np.prod(test_img.shape))  # flood source
+        else:
+            test_img[np.unravel_index(point_check, test_img.shape)] = counts  # point source
 
-    plt.imshow(test_img,  cmap='jet', origin='lower')
-    plt.show()
-
-    sysmat_file = load_h5file(sysmat_filename)
-    sysmat = sysmat_file.root.sysmat[:].T
+    # plt.imshow(test_img,  cmap='jet', origin='lower')
+    # plt.show()
+    if h5file:
+        sysmat_file = load_h5file(sysmat_filename)
+        sysmat = sysmat_file.root.sysmat[:].T
+    else:
+        sysmat = np.load(sysmat_filename).T
 
     test_counts = sysmat.dot(test_img.ravel()).round()
     if sensitivity_norm:
@@ -119,6 +126,7 @@ def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=F
     else:
         sens = np.ones(sysmat.shape[1])
 
+    test_counts = np.random.poisson(test_counts)  # TODO: Remove if finding local PSFs
     recon = compute_mlem(sysmat, test_counts, img_pxl_x, sensitivity=sens, **kwargs)
 
     if check_proj:
@@ -136,7 +144,7 @@ def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=F
             ax[row, col].set_yticks([])
             ax[row, col].set_xticks([])
 
-        sysmat_file.close()
+        # sysmat_file.close()
         fig.tight_layout()
         plt.show()
 
@@ -155,21 +163,58 @@ def test_mlem(sysmat_filename, check_proj=False, point_check=None, line_source=F
 
     plt.colorbar(img, fraction=0.046 * (sysmat.shape[0]/sysmat.shape[1]), pad=0.04)
     plt.show()
-    sysmat_file.close()
+
+    plt.figure(figsize=(12, 8))
+    x_vals = np.linspace(extent_img[0], extent_img[1], img_pxl_x)
+    plt.plot(x_vals, recon.reshape([img_pxl_y, img_pxl_x])[13, :], label='Single Slice')
+    plt.xlabel('[mm]', fontsize=14)
+    plt.xticks(fontsize=14)
+    plt.ylabel('Counts', fontsize=14)
+    plt.yticks(fontsize=14)
+    # plt.plot(x_vals, np.mean(recon.reshape([img_pxl_y, img_pxl_x])[13-1:13+1+1, :], axis=0), label='3 Row Average')
+    plt.title("Central Slice")
+    plt.show()
+
+    if h5file:
+        sysmat_file.close()
+
+
+def system_matrix_interpolate(sysmat_filename, save=False):
+    sysmat_file = load_h5file(sysmat_filename)
+    sysmat = sysmat_file.root.sysmat[:]
+    if save:
+        save_name = sysmat_filename[:-3] + '_interp'
+        interpolate_system_response(sysmat, x_img_pixels=75, save_fname=save_name)
+    else:
+        interpolate_system_response(sysmat, x_img_pixels=75)
 
 
 def main():
-    filename = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5'
-    # filename = '/Users/justinellin/repos/sysmat/design/2021-02-24-0102_SP0.h5'
+    # filename = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5'
     # filename = '/Users/justinellin/repos/sysmat/design/2021-02-23-2351_SP0.h5'  # 3 points
-    see_projection_together(filename, choose_pt=937)
+    # see_projection_together(filename, choose_pt=937)
     # see_projection_separate(filename, choose_pt=937)
-    # sensitivity_map(filename, npix=(75, 25), pxl_sze=2, correction=True)
+
+    filename = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy'
+    sysmat = np.load(filename)
+    # sysmat_file = load_h5file(filename)
+    # sysmat = sysmat_file.root.sysmat[:]
+    sensitivity_map(sysmat, npix=(149, 49), pxl_sze=1, correction=False)
 
 
 if __name__ == '__main__':
     # main()
+
+    fname = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy'
+    test_mlem(sysmat_filename=fname, line_source=True, line_length=100, filt_sigma=[0.5, 3],
+              img_pxl_x=149, img_pxl_y=49, pxl_sze=1, counts=10**8,
+              nIterations=200, h5file=False)  # TODO: Generate and give to Josh? Interpolate and non-interpolated.
+
     # test_mlem(sigma=0.5)
-    test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
-              line_source=True, filt_sigma=0.5, nIterations=100)  # TODO: Sensitivity Term in System_Response
-    # TODO: Generate "line" data with poisson noise
+    # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
+    #          line_source=True, filt_sigma=[0.25, 1.5], nIterations=200)
+    # [0.25, 1] for nice thin line source
+    # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
+    #          line_source=False, filt_sigma=0.5, nIterations=100)  # Flood test
+
+    # system_matrix_interpolate('/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5', save=True)

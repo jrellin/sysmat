@@ -364,5 +364,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # test(separate=False)
-    main()
+    test(separate=False)
+    # main()

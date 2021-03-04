@@ -33,13 +33,50 @@ def generate_detector_centers_and_norms(layout, det_width=50, focal_length=350,
     # print("Centers: ", centers)
 
     centers[:, 2] = np.sqrt((focal_length**2) - np.sum(centers[:, :2] ** 2, axis=1)) * (-np.sign(focal_pt[2]))
-    # TODO: This is not generic. Fix someday?
+    # TODO: This is not generic. Fix someday? Probably rotate afterward
 
     # print("Centers: ", centers + focal_pt)
 
     directions = norm_vectors_array(-centers, axis=1)
     shifted_centers = centers + focal_pt  # this is now relative to center
     return shifted_centers, directions
+
+
+def interpolate_system_response(sysmat, x_img_pixels, save_fname='interp'):
+    # n_pixels, n_measurements i.e. (1875, 2304)
+    # tot_det_pixels, tot_img_pixels = sysmat.shape  # n_measurements, n_pixels
+    tot_img_pixels, tot_det_pixels = sysmat.shape  # n_pixels, n_measurements
+    y_img_pixels = tot_img_pixels // x_img_pixels
+
+    x_interp_img_pixels = (2 * x_img_pixels-1)
+    y_interp_img_pixels = (2 * y_img_pixels-1)
+    interp_sysmat = np.zeros([x_interp_img_pixels * y_interp_img_pixels, tot_det_pixels], dtype=sysmat.dtype)
+
+    for row in np.arange(y_img_pixels):  # start from top row, fill in known values and interp in-between x vals
+        interp_rid = 2 * row * x_interp_img_pixels  # start
+        orig_rid = row * x_img_pixels
+        interp_sysmat[interp_rid:interp_rid + x_interp_img_pixels:2, :] = sysmat[orig_rid:orig_rid+x_img_pixels, :]
+
+        interp_sysmat[(interp_rid+1):interp_rid + x_interp_img_pixels:2, :] = \
+            (sysmat[orig_rid:(orig_rid + x_img_pixels-1), :] + sysmat[(orig_rid+1):orig_rid + x_img_pixels, :]) * 0.5
+    # This can probably be combined with the above
+    for row in np.arange(1, y_interp_img_pixels, 2):  # interp y img vals between known values
+        interp_rid = row * x_interp_img_pixels
+        a_rid = (row-1) * x_interp_img_pixels  # This is skipped by iteration (above rid)
+        b_rid = (row+1) * x_interp_img_pixels  # (b)elow rid
+        interp_sysmat[interp_rid:interp_rid+x_interp_img_pixels:2, :] = \
+            (interp_sysmat[a_rid:a_rid+x_interp_img_pixels:2, :] + interp_sysmat[b_rid:b_rid+x_interp_img_pixels:2, :])\
+            * 0.5
+
+        interp_sysmat[(interp_rid + 1):interp_rid + x_interp_img_pixels:2, :] = \
+            (interp_sysmat[a_rid:a_rid+x_interp_img_pixels-2:2, :] +
+             interp_sysmat[(a_rid+1):a_rid + x_interp_img_pixels:2, :] +
+             interp_sysmat[b_rid:b_rid + x_interp_img_pixels - 2:2, :] +
+             interp_sysmat[(b_rid + 1):b_rid + x_interp_img_pixels:2, :]) * 0.25
+
+    print("Interpolated Shape: ", interp_sysmat.shape)
+    print("Nonzero values (percent): ", 1.0 * np.count_nonzero(interp_sysmat)/interp_sysmat.size)
+    np.save(save_fname, interp_sysmat)
 
 
 def generate_flat_detector_pts(layout, center, mod_spacing_dist):
@@ -118,6 +155,78 @@ def compute_mlem(sysmat, counts, x_img_pixels, x_det_pixels=48, sensitivity=None
         itrs += 1
     print("Total Iterations: ", itrs)
     return recon_img
+
+
+def generate_PSFs(sysmat, buffer_xy, x_img_pixels, save_fname='psfs', **kwargs):
+    tot_det_pixels, tot_img_pixels = sysmat.shape
+    y_img_pixels = tot_img_pixels // x_img_pixels
+
+    width = buffer_xy[0] * 2  # X
+    height = buffer_xy[1] * 2  # Y
+    pass
+
+
+def make_gaussian(size, fwhm=1):  # f, center=None):
+    """ Make a centered normalized square gaussian kernel.
+
+    size is the length of a side of the square
+    fwhm is full-width-half-maximum, which
+    can be thought of as an effective radius.
+    """
+
+    x = np.arange(0, size, 1, float)  # size should really be an odd integer
+    y = x[:, np.newaxis]
+
+    x0 = y0 = (x[-1] + x[0])/2
+
+    # fwhm = (4 * np.log(2)/6) * (vox**2)  # where vox is the length of a box in pixels
+    gaussian = np.exp(-4*np.log(2) * ((x-x0)**2 + (y-y0)**2) / fwhm**2)
+
+    return gaussian/gaussian.sum()
+
+
+def multivariate_gaussian(pos, mu, Sigma):
+    """Return the multivariate Gaussian distribution on array pos."""
+    # Our 2-dimensional distribution will be over variables X and Y
+    # N = 40
+    # X = np.linspace(-2, 2, N)
+    # Y = np.linspace(-2, 2, N)
+    # X, Y = np.meshgrid(X, Y)
+
+    # Mean vector and covariance matrix
+    # mu = np.array([0., 0.])
+    # Sigma = np.array([[1., -0.5], [-0.5, 1.]])
+
+    # Pack X and Y into a single 3-dimensional array
+    # pos = np.empty(X.shape + (2,))
+    # pos[:, :, 0] = X
+    # pos[:, :, 1] = Y
+
+    # The distribution on the variables X, Y packed into pos.
+    # Z = multivariate_gaussian(pos, mu, Sigma)
+
+    n = mu.shape[0]
+    Sigma_det = np.linalg.det(Sigma)
+    Sigma_inv = np.linalg.inv(Sigma)
+    N = np.sqrt((2*np.pi)**n * Sigma_det)
+    # This einsum call calculates (x-mu)T.Sigma-1.(x-mu) in a vectorized
+    # way across all the input variables.
+    fac = np.einsum('...k,kl,...l->...', pos-mu, Sigma_inv, pos-mu)
+
+    return np.exp(-fac / 2) / N
+
+
+def gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs):
+    # assumption is that sysmat shape is (n_pixels, n_measurements) i.e. (1875, 2304)
+    tot_img_pixels, tot_det_pixels = sysmat.shape  # n_pixels, n_measurements
+
+    view = sysmat.T.reshape([tot_det_pixels, tot_img_pixels // x_img_pixels,  x_img_pixels])
+
+    kern = make_gaussian(*args, **kwargs)  # size, fwhm=1
+    buffer = np.floor(kern.shape[0]/2)  # kernel is square for now
+
+    # resmat * wgts[None,...]  where resmat is the (det_pxl, size, size) block
+    pass
 
 
 def test_orientation():
