@@ -149,9 +149,9 @@ def test_mlem(sysmat_filename, h5file = True, check_proj=False, sensitivity_norm
 
     xcoords = [0, 25, 50]
     colors = ['k', 'r', 'm']
-    for xc, c in zip(xcoords, colors):
-        plt.axvline(x=xc, linestyle='--', label='line at x = {}'.format(xc), c=c, linewidth=2)
-    plt.axhline(y=0, linestyle='--', c=colors[0], linewidth=2)
+    # for xc, c in zip(xcoords, colors):
+    #    plt.axvline(x=xc, linestyle='--', label='line at x = {}'.format(xc), c=c, linewidth=2)
+    # plt.axhline(y=0, linestyle='--', c=colors[0], linewidth=2)
 
     plt.xlabel('[mm]', fontsize=14)
     plt.xticks(fontsize=14)
@@ -202,6 +202,9 @@ def test_mlem(sysmat_filename, h5file = True, check_proj=False, sensitivity_norm
     plt.legend()
     plt.show()
 
+    print("y0_plane_idx: ", y0_plane_idx)
+    np.save('central_slice', recon.reshape([img_pxl_y, img_pxl_x]))
+
 
 def system_matrix_interpolate(sysmat_filename, save=False):
     sysmat_file = load_h5file(sysmat_filename)
@@ -241,8 +244,8 @@ if __name__ == '__main__':
     #          img_pxl_x=149, img_pxl_y=49, pxl_sze=1, counts=10**8, slice_plots=True,
     #          nIterations=800, h5file=False)  # TODO: Generate and give to Josh? Interpolate and non-interpolated.
 
-    # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
-    #          line_source=True, filt_sigma=[0.5, 1], nIterations=500, counts=10**8, slice_plots=True)
+    test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
+              line_source=True, filt_sigma=[0.25, 1], nIterations=500, counts=10**8, slice_plots=True)
     # [0.25, 1] for nice thin line source, [0.5, 1] wide source
     # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
     #          line_source=False, filt_sigma=0.5, nIterations=100)  # Flood test

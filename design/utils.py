@@ -293,7 +293,21 @@ def smooth_point_response(sysmat_filename, x_img_pixels, *args, h5file=True, **k
         sysmat_file.close()
 
 
+def lin_interp(x, y, i, half):
+    return x[i] + (x[i+1] - x[i]) * ((half - y[i]) / (y[i+1] - y[i]))
+
+
+def half_max_x(x, y):
+    half = max(y)/2.0
+    signs = np.sign(np.add(y, -half))
+    zero_crossings = (signs[0:-2] != signs[1:-1])
+    zero_crossings_i = np.where(zero_crossings)[0]
+    return [lin_interp(x, y, zero_crossings_i[0], half),
+            lin_interp(x, y, zero_crossings_i[1], half)]
+
+
 if __name__ == "__main__":
-    # test_orientation()
-    smooth_point_response("/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy", 149, 7,
-                          h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
+    test_orientation()
+    # smooth_point_response("/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy", 149, 7,
+    #                      h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
+

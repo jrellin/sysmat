@@ -149,7 +149,7 @@ class Detector(object):
                               np.dot(inside_rays - self.c, self.axes[1]),
                               bins=(self.hist_ax0, self.hist_ax1),
                               weights=prefactor * prob_interact)[0].T  # normalize by subpixels
-        # Histogram must be TRANSPOSED
+        # Histogram must be TRANSPOSED  # TODO: Reverse row order?
 
 
 def norm(array):
