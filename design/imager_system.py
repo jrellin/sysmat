@@ -82,6 +82,7 @@ class Imager(object):
             file.flush()
             if (prog + 1) / src_pts > 0.02:
                 perc += 2
+                print("Current Source Point: ", src_pt)
                 print("Progress (percent): ", perc)
                 prog = 0
                 continue
@@ -310,31 +311,10 @@ def main():
     # layout = np.array([4, 4])
     # system.detector_system.layout = layout  # could just put in __init__ of Detector_System
 
-    # mod_spacing_dist = 50  # Beginning of comment out  (1)
-    # scalars = np.arange(-system.detector_system.layout[1]/2 + 0.5, system.detector_system.layout[1]/2 + 0.5) *\
-    #           mod_spacing_dist
-
-    # x = np.array([1, 0, 0])
-    # distance_mod_plane = system.collimator.colp + np.array([0, 0, -130]) + (25.4 * x)  # shift of center
-
-    # x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
-    # y_vec = np.outer(scalars[::-1], np.array([0, 1, 0]))  # Start top row relative to ground
-
-    # mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane
-
-    # for det_idx, det_center in enumerate(mod_centers):
-    #     print("Set det_center: ", det_center)
-    #     system.create_detector(det_id=det_idx, center=det_center)  # End of comment out (1)
-
     x = np.array([1, 0, 0])
     y = np.array([0, 1, 0])
     x_displacement = 25.4
     distance_mod_plane = np.array([0, 0, -260]) + (x_displacement * x)
-
-    # x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
-    # y_vec = np.outer(scalars[::-1], y)  # Start top row relative to ground
-
-    # mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane  # end flat array
 
     mod_centers, directions = generate_detector_centers_and_norms(system.detector_system.layout,
                                                                   det_width=50,
@@ -347,9 +327,13 @@ def main():
 
     # ==================== Sources ====================
     # system.sources.npix = np.array((151, 25))  # x (beam), vertical # this is for 1 mm spacing
-    # system.sources.sc = np.array([0, 0, 0])
+    # system.sources.sc = np.array([0, 0, 0])  # original
+    # system.sources.npix = np.array([75, 25])  # original
+    # system.sources.sc = np.array([0, 25, 0])  # above (3/17 at 15:23)
+    system.sources.sc = np.array([0, -25, 0])  # below
+    # system.sources.npix = np.array([101, 21])  # 3/18
     system.sources.vsze = 2
-    system.sources.npix = np.array([75, 25])
+    system.sources.npix = np.array([81, 25])  # 3/19
 
     # ==================== Attenuation ====================
     # system.collimator.mu = 0.04038 * (10 ** 2)
@@ -359,10 +343,10 @@ def main():
     system.sample_step = 0.1  # in mm, default
     system.subsample = 0  # powers of 2
 
-    system.generate_sysmat_response()
+    system.generate_sysmat_response()  # TODO: Save system specs in generated file
     print('It took ' + str(time.time() - start) + ' seconds.')
 
 
 if __name__ == "__main__":
-    test(separate=False)
-    # main()
+    # test(separate=False)
+    main()
