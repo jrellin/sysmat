@@ -7,3 +7,6 @@ new_basis/.DS_Store
 simple_sysmat/__pycache__/
 .idea/misc.xml
 /temp.py
+/design/*.h5
+/design/*.npy
+/design/__pycache__/

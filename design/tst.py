@@ -206,14 +206,14 @@ def test_mlem(sysmat_filename, h5file = True, check_proj=False, sensitivity_norm
     np.save('central_slice', recon.reshape([img_pxl_y, img_pxl_x]))
 
 
-def system_matrix_interpolate(sysmat_filename, save=False):
+def system_matrix_interpolate(sysmat_filename, x_dim=75):
+    """Kargs: x_img_pixels, save_fname, """
     sysmat_file = load_h5file(sysmat_filename)
     sysmat = sysmat_file.root.sysmat[:]
-    if save:
-        save_name = sysmat_filename[:-3] + '_interp'
-        interpolate_system_response(sysmat, x_img_pixels=75, save_fname=save_name)
-    else:
-        interpolate_system_response(sysmat, x_img_pixels=75)
+
+    save_name = sysmat_filename[:-3] + '_interp'
+    interpolate_system_response(sysmat, x_img_pixels=x_dim, save_fname=save_name)
+    sysmat_file.close()
 
 
 def main():
@@ -236,18 +236,19 @@ if __name__ == '__main__':
 
     # fname = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy'
 
-    fname = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_F1S7.npy'
+    # fname = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_F1S7.npy'
     # sysmat = np.load(fname)
     # sens_correct = sensitivity_map(sysmat, npix=(149, 49), pxl_sze=1, correction=True)
     # test_mlem(sysmat_filename=fname,
     #          line_source=True, line_length=100, line_buffer=4, line_sigma=1, line_width=1, filt_sigma=[0.5, 4.5],
     #          img_pxl_x=149, img_pxl_y=49, pxl_sze=1, counts=10**8, slice_plots=True,
-    #          nIterations=800, h5file=False)  # TODO: Generate and give to Josh? Interpolate and non-interpolated.
+    #          nIterations=800, h5file=False)
 
-    test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
-              line_source=True, filt_sigma=[0.25, 1], nIterations=500, counts=10**8, slice_plots=True)
+    # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
+    #          line_source=True, filt_sigma=[0.25, 1], nIterations=500, counts=10**8, slice_plots=True)
+
     # [0.25, 1] for nice thin line source, [0.5, 1] wide source
     # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
     #          line_source=False, filt_sigma=0.5, nIterations=100)  # Flood test
 
-    # system_matrix_interpolate('/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5', save=True)
+    system_matrix_interpolate('/home/justin/repos/sysmat/design/2021-03-24-1651_SP0.h5', x_dim=101)

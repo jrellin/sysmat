@@ -51,7 +51,7 @@ def generate_detector_centers_and_norms(layout, det_width=50, focal_length=350,
     return shifted_centers, directions
 
 
-def interpolate_system_response(sysmat, x_img_pixels, save_fname='interp'):
+def interpolate_system_response(sysmat, x_img_pixels=75, save_fname='interp'):
     # n_pixels, n_measurements i.e. (1875, 2304)
     # tot_det_pixels, tot_img_pixels = sysmat.shape  # n_measurements, n_pixels
     tot_img_pixels, tot_det_pixels = sysmat.shape  # n_pixels, n_measurements
@@ -282,7 +282,9 @@ def smooth_point_response(sysmat_filename, x_img_pixels, *args, h5file=True, **k
     size = args[0]
     try:
         fwhm = int(kwargs['fwhm']/2.355)
-    except:
+    except Exception as e:
+        print(e)
+        print("Default FWHM used: 1")
         fwhm = 1
 
     print("Sysmat Shape:", sysmat.shape)
@@ -307,7 +309,11 @@ def half_max_x(x, y):
 
 
 if __name__ == "__main__":
-    test_orientation()
+    # test_orientation()  # See orientation of collimator
+
     # smooth_point_response("/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy", 149, 7,
-    #                      h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
+    #                       h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
+
+    smooth_point_response("/home/justin/repos/sysmat/design/2021-03-24-1651_SP0_interp.npy", 201, 7,
+                          h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
 

@@ -89,7 +89,7 @@ class Imager(object):
             prog += 1
         file.close()
 
-    def _point_response_function(self, src_pt, **kwargs):
+    def _point_response_function(self, src_pt, **kwargs):  # TODO: Add in angular momentum sampling
         self.detector_system.projection.fill(0.0)  # Clear
 
         for det_end_pt in self.detector_system.generate_det_sample_pts(**kwargs):
@@ -330,10 +330,11 @@ def main():
     # system.sources.sc = np.array([0, 0, 0])  # original
     # system.sources.npix = np.array([75, 25])  # original
     # system.sources.sc = np.array([0, 25, 0])  # above (3/17 at 15:23)
-    system.sources.sc = np.array([0, -25, 0])  # below
+    system.sources.sc = np.array([0, -74, 0])  # below
     # system.sources.npix = np.array([101, 21])  # 3/18
     system.sources.vsze = 2
-    system.sources.npix = np.array([81, 25])  # 3/19
+    # system.sources.npix = np.array([81, 25])  # 3/19
+    system.sources.npix = np.array([101, 27])  # 3/23
 
     # ==================== Attenuation ====================
     # system.collimator.mu = 0.04038 * (10 ** 2)
