@@ -12,3 +12,5 @@ To Do: Text Config Parser similar to sis3316-jrellin code package
 
 ### Note
 Default orientation assumes +z axis points from detector plane to source plane
+
+Can generate large files depending on parameter space (> GB). Examples available on request
