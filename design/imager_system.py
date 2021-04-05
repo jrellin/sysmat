@@ -77,16 +77,17 @@ class Imager(object):
         prog = 0
         perc = 0
 
+        evts_per_percent = np.floor(0.01 * src_pts)
+
         for src_pt in self.sources.source_pt_iterator():
             pt_responses.append(self._point_response_function(src_pt, **kwargs).ravel()[None])
             file.flush()
-            if (prog + 1) / src_pts > 0.02:
-                perc += 2
+            prog += 1
+            if prog > 2 * evts_per_percent:
+                perc += prog/src_pts * 100 # total points
                 print("Current Source Point: ", src_pt)
                 print("Progress (percent): ", perc)
                 prog = 0
-                continue
-            prog += 1
         file.close()
 
     def _point_response_function(self, src_pt, **kwargs):  # TODO: Add in angular momentum sampling
@@ -178,7 +179,7 @@ def test(separate=True):
 
     x = np.array([1, 0, 0])
     y = np.array([0, 1, 0])
-    x_displacement = 25.4
+    x_displacement = 25.447
     distance_mod_plane = np.array([0, 0, -260]) + (x_displacement * x)
 
     # x_vec = np.outer(scalars, x)  # Start left (near beam port) of beam axis
@@ -186,7 +187,7 @@ def test(separate=True):
 
     # mod_centers = (y_vec[:, np.newaxis] + x_vec[np.newaxis, :]).reshape(-1, 3) + distance_mod_plane  # end flat array
 
-    mod_centers, directions = generate_detector_centers_and_norms(layout, det_width=50, focal_length=350)
+    mod_centers, directions = generate_detector_centers_and_norms(layout, det_width=53.2, focal_length=420.9)
 
     for det_idx, det_center in enumerate(mod_centers + distance_mod_plane):
         print("Set det_center: ", det_center)
@@ -251,7 +252,6 @@ def test(separate=True):
     plt.show()
     # NOTE: There is a quirk with hard bins with histogram.
     # Left most edge and right most edge do not have same treatment
-    # TODO: Put realistic dimensions for translations of the detector relative to collimator (check notes)
 
 
 def main():
@@ -313,12 +313,12 @@ def main():
 
     x = np.array([1, 0, 0])
     y = np.array([0, 1, 0])
-    x_displacement = 25.4
+    x_displacement = 25.447
     distance_mod_plane = np.array([0, 0, -260]) + (x_displacement * x)
 
     mod_centers, directions = generate_detector_centers_and_norms(system.detector_system.layout,
-                                                                  det_width=50,
-                                                                  focal_length=350)
+                                                                  det_width=53.2,
+                                                                  focal_length=420.9)
 
     for det_idx, det_center in enumerate(mod_centers + distance_mod_plane):
         print("Set det_center: ", det_center)
@@ -326,15 +326,9 @@ def main():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    # system.sources.npix = np.array((151, 25))  # x (beam), vertical # this is for 1 mm spacing
-    # system.sources.sc = np.array([0, 0, 0])  # original
-    # system.sources.npix = np.array([75, 25])  # original
-    # system.sources.sc = np.array([0, 25, 0])  # above (3/17 at 15:23)
-    system.sources.sc = np.array([0, -74, 0])  # below
-    # system.sources.npix = np.array([101, 21])  # 3/18
+    system.sources.sc = np.array([0, -71, -30])
     system.sources.vsze = 2
-    # system.sources.npix = np.array([81, 25])  # 3/19
-    system.sources.npix = np.array([101, 27])  # 3/23
+    system.sources.npix = np.array([121, 31])
 
     # ==================== Attenuation ====================
     # system.collimator.mu = 0.04038 * (10 ** 2)

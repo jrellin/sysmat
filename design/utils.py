@@ -12,7 +12,7 @@ def load_h5file(filepath):
         raise ValueError('{fi} is not a hdf5 file!'.format(fi=filepath))
 
 
-def generate_detector_centers_and_norms(layout, det_width=50, focal_length=350,
+def generate_detector_centers_and_norms(layout, det_width=50., focal_length=350.,
                                         x_dir=np.array([1, 0, 0]),
                                         y_dir=np.array([0, 1, 0]),
                                         focal_dir=np.array([0, 0, 1])):
@@ -260,7 +260,8 @@ def test_orientation():
     fig = plt.figure()
     ax = Axes3D(fig)
 
-    centers, dirs = generate_detector_centers_and_norms(np.array([4, 4]), focal_length=350)
+    centers, dirs = generate_detector_centers_and_norms(np.array([4, 4]), det_width=53.2, focal_length=420.9)
+    # det width = 50, focal = 350 until 3/27
     for det_idx, det_center in enumerate(centers):
         print("Set det_center: ", det_center)
         print("Direction: ", dirs[det_idx])
@@ -268,6 +269,10 @@ def test_orientation():
 
     # ax.scatter(centers[:, 0], centers[:, 1], centers[:, 2])
     ax.quiver(centers[:, 0], centers[:, 1], centers[:, 2], dirs[:, 0], dirs[:, 1], dirs[:, 2], length=20)
+    ax.set_xlabel('Det X [mm]')
+    ax.set_ylabel('Det Y [mm]')
+    ax.set_zlabel('System Axis [mm]')
+
     ax.set_zlim(0, 130)
     plt.show()
 
@@ -309,11 +314,10 @@ def half_max_x(x, y):
 
 
 if __name__ == "__main__":
-    # test_orientation()  # See orientation of collimator
+    test_orientation()  # See orientation of collimator
 
     # smooth_point_response("/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy", 149, 7,
     #                       h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
 
-    smooth_point_response("/home/justin/repos/sysmat/design/2021-03-24-1651_SP0_interp.npy", 201, 7,
-                          h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
-
+    # smooth_point_response("/home/justin/repos/sysmat/design/2021-03-30-2347_SP0_interp.npy", 201, 7,
+    #                       h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)

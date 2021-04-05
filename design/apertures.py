@@ -45,7 +45,7 @@ class Collimator(object):
         for aper in self.apertures:
             attenuation += aper.ray_pass(ray_in_collimator)
 
-        # return np.any(attenuation > 0)  # TODO: EXTREME, uncomment to only see pattern
+        # return np.any(attenuation > 0)  # EXTREME, uncomment to only see pattern
         return np.exp(-self.rho * self.mu * np.sum((attenuation == 0)) * self.imager.sample_step)
 
 
