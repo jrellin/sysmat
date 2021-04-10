@@ -236,11 +236,12 @@ def sysmat_processing(files, npix, *args, interp=True, smooth=True, fname='proce
 
 
 def main():
-    # files = ['/home/justin/repos/sysmat/design/2021-04-01-2021_SP0.h5',  # 120 cm from source to collimator
-    #         '/home/justin/repos/sysmat/design/2021-04-02-0012_SP0.h5',  # 110 cm
-    #         '/home/justin/repos/sysmat/design/2021-04-02-0308_SP0.h5',  # 100
-    #         '/home/justin/repos/sysmat/design/2021-04-02-1407_SP0.h5']  # 90
+    files = ['/home/justin/repos/sysmat/design/2021-04-01-2021_SP0.h5',  # 120 cm from source to collimator
+             '/home/justin/repos/sysmat/design/2021-04-02-0012_SP0.h5',  # 110 cm
+             '/home/justin/repos/sysmat/design/2021-04-02-0308_SP0.h5',  # 100
+             '/home/justin/repos/sysmat/design/2021-04-02-1407_SP0.h5']  # 90
     # npix = np.array([37, 31])  # 3D
+    append_responses(files, save_name='fov3d')
 
     # files = ['/home/justin/repos/sysmat/design/2021-04-02-1407_SP0.h5']
     # files = ['/home/justin/repos/sysmat/design/2021-04-03-0520_SP0.h5',
@@ -255,10 +256,10 @@ def main():
     # sysmat_processing(files, npix, 7, fwhm=2.355 * 1, fname='100mm_fuller_FoV_processed')
     # Note: This works but forget set npix in recon
 
-    base_folder = '/home/justin/Desktop/system_responses/'
-    sysmat_files = ['obj/100mm_fuller_FoV_processed_F1S7.npy', 'table/table_appended.npy']
-    files = [base_folder + file for file in sysmat_files]
-    append_responses(files, save_name='obj_table')
+    # base_folder = '/home/justin/Desktop/system_responses/'
+    # sysmat_files = ['obj/100mm_fuller_FoV_processed_F1S7.npy', 'table/table_appended.npy']
+    # files = [base_folder + file for file in sysmat_files]
+    # append_responses(files, save_name='obj_table')
 
 
 if __name__ == "__main__":
