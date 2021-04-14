@@ -63,7 +63,7 @@ def smooth_point_response(sysmat, x_img_pixels, *args, **kwargs):  # h5file = Tr
 
     size = args[0]
     try:
-        fwhm = int(kwargs['fwhm']/2.355)
+        fwhm = kwargs['fwhm']
     except Exception as e:
         print(e)
         print("Default FWHM used: 1")
@@ -74,7 +74,9 @@ def smooth_point_response(sysmat, x_img_pixels, *args, **kwargs):  # h5file = Tr
     # np.save(save_name, gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs))  # size, fwhm of kernel
     # if h5file:
     #     sysmat_file.close()
-    return gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs), "_F" + str(fwhm) + "S" + str(size)
+
+    fstr = str(int(fwhm)) + "_" + "{:.1f}".format(fwhm)[2:]
+    return gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs), "_F" + fstr + "S" + str(size)
 
 
 def gaussian_smooth_response(sysmat, x_img_pixels, *args, **kwargs):  # needed for smooth_point_response
@@ -191,6 +193,10 @@ def load_h5file(filepath):
 def sysmat_processing(files, npix, *args, interp=True, smooth=True, fname='processed', **kwargs):
     """*args = sze of gaussian filter and **kwargs is fhwm of filter. Files is list of sysmat_files and npix is list
     of dimensions of the spaces"""
+
+    if isinstance(files, str):
+        files = [files]
+
     if len(files) > np.array(npix).size//2:
         print("Checked")
         npix = [npix] * len(files)
@@ -227,6 +233,9 @@ def sysmat_processing(files, npix, *args, interp=True, smooth=True, fname='proce
         store_list.append(sysmat)
 
     fname += append_str
+    # if len(store_list) == 1:
+    #   processed_array = store_list[0]
+    # else:
     processed_array = np.vstack(store_list)
     print("Final shape: ", processed_array.shape)
     np.save(fname, processed_array)
@@ -236,12 +245,12 @@ def sysmat_processing(files, npix, *args, interp=True, smooth=True, fname='proce
 
 
 def main():
-    files = ['/home/justin/repos/sysmat/design/2021-04-01-2021_SP0.h5',  # 120 cm from source to collimator
-             '/home/justin/repos/sysmat/design/2021-04-02-0012_SP0.h5',  # 110 cm
-             '/home/justin/repos/sysmat/design/2021-04-02-0308_SP0.h5',  # 100
-             '/home/justin/repos/sysmat/design/2021-04-02-1407_SP0.h5']  # 90
+    # files = ['/home/justin/repos/sysmat/design/2021-04-01-2021_SP0.h5',  # 120 cm from source to collimator
+    #          '/home/justin/repos/sysmat/design/2021-04-02-0012_SP0.h5',  # 110 cm
+    #          '/home/justin/repos/sysmat/design/2021-04-02-0308_SP0.h5',  # 100
+    #          '/home/justin/repos/sysmat/design/2021-04-02-1407_SP0.h5']  # 90
     # npix = np.array([37, 31])  # 3D
-    append_responses(files, save_name='fov3d')
+    # append_responses(files, save_name='fov3d')
 
     # files = ['/home/justin/repos/sysmat/design/2021-04-02-1407_SP0.h5']
     # files = ['/home/justin/repos/sysmat/design/2021-04-03-0520_SP0.h5',
@@ -254,12 +263,18 @@ def main():
     # append_FoVs(files, first_dim_pxls=first_dpxls, save_name='table_appended')
 
     # sysmat_processing(files, npix, 7, fwhm=2.355 * 1, fname='100mm_fuller_FoV_processed')
-    # Note: This works but forget set npix in recon
+    # Note: This works but forget set npix in recon. FWHM of 2.355 is DOUBLE COUNTING
 
     # base_folder = '/home/justin/Desktop/system_responses/'
     # sysmat_files = ['obj/100mm_fuller_FoV_processed_F1S7.npy', 'table/table_appended.npy']
     # files = [base_folder + file for file in sysmat_files]
     # append_responses(files, save_name='obj_table')
+
+    files = '/home/justin/repos/sysmat/design/2021-04-12-1758_SP0.h5'
+    npix = np.array([121, 31])
+    # sysmat_processing(files, npix, smooth=False, fname='120mm_wide_FoV_processed_no_smooth')
+    # RMS fwhm = 1/np.sqrt(12) * 2.355 = 0.6798
+    sysmat_processing(files, npix, 7, fwhm=0.7, fname='120mm_wide_FoV_processedRMS')
 
 
 if __name__ == "__main__":

@@ -326,7 +326,7 @@ def main():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    system.sources.sc = np.array([0, -10, 0])  # This is at 130 mm collim to source distance
+    system.sources.sc = np.array([0, -10, -10])  # This is at 120 mm collim to source distance
     system.sources.vsze = 2
     system.sources.npix = np.array([121, 31])
 
