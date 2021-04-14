@@ -21,29 +21,37 @@ def see_projection_together(sysmat_fname, choose_pt=0):
 
 # def sensitivity_map(sysmat_fname, npix=(150, 50), pxl_sze= 1, dpix=(48, 48), correction=False):
 def sensitivity_map(sysmat, npix=(150, 50), pxl_sze=1, dpix=(48, 48), correction=False):
-    # sysmat_file = load_h5file(sysmat_fname)
-    # sysmat = sysmat_file.root.sysmat[:]
+    # from matplotlib.ticker import MaxNLocator
     print("System Shape: ", sysmat.shape)
 
     sens = np.sum(sysmat, axis=1).reshape([npix[1], npix[0]])
     if correction:
         sens = np.mean(sens) / sens
-    plt.figure(figsize=(12, 8))
-    extent_img = np.array([-npix[0]/2, npix[0]/2, -npix[1]/2, npix[1]/2]) * pxl_sze
-    img = plt.imshow(sens, cmap='jet', origin='lower', interpolation='nearest', aspect='equal', extent=extent_img)
+    # plt.figure(figsize=(12, 8))
+    extent_img = np.array([-npix[0]/20, npix[0]/20, -npix[1]/20, npix[1]/20]) * pxl_sze  # in cm
+    img = plt.imshow(sens, cmap='magma', origin='lower', interpolation='nearest',
+                     aspect='equal', extent=extent_img)
+    ax = plt.gca()
+    ax.yaxis.get_major_locator().set_params(integer=True)
+    ax.xaxis.get_major_locator().set_params(integer=True)
 
     if correction:
-        plt.title("Sensitivity Correction Map", fontsize=14)
+        plt.title("Sensitivity Correction Map", fontsize=16)
     else:
-        plt.title("Sensitivity Map", fontsize=14)
-    plt.xlabel('[mm]', fontsize=14)
+        plt.title("Sensitivity Map", fontsize=16)
+    plt.xlabel('[cm]', fontsize=14)
     plt.xticks(fontsize=14)
-    plt.ylabel('[mm]', fontsize=14)
+    plt.ylabel('[cm]', fontsize=14)
+    plt.yticks(fontsize=14)
 
-    plt.colorbar(img, fraction=0.046 * (sysmat.shape[0]/sysmat.shape[1]), pad=0.04)
+    cbar = plt.colorbar(img)
+    cbar.set_label('/ mm$^{3}$', rotation=0, y=0, ha='center')
+    cbar.ax.tick_params(labelsize=12)
+    # plt.colorbar(img, fraction=0.046 * (sysmat.shape[0]/sysmat.shape[1]), pad=0.04)
     # sysmat_file.close()
     print("Total Sensitivity: ", np.sum(sysmat))
     print("Average Sensitivity: ", np.sum(sysmat)/np.prod(npix))
+    print("Max Sensitivity: ", sens.max())
     plt.show()
     return sens
 
@@ -90,16 +98,19 @@ def main():
     # see_projection_separate(filename, choose_pt=937)
 
     # filename = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_interp.npy'
-    filename = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_F1S7.npy'
+    # filename = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_F1S7.npy'
+    filename = '/home/justin/repos/sysmat/design/Apr14_full_F2_0S7.npy'
+
+    # filename = '/home/justin/Desktop/system_responses/Thesis/2021-03-27-1529_SP0.h5'
     sysmat = np.load(filename)
     # sysmat_file = load_h5file(filename)
     # sysmat = sysmat_file.root.sysmat[:]
     # 149, 49 interp size
-    sensitivity_map(sysmat, npix=(149, 49), pxl_sze=1, correction=False)
+    sensitivity_map(sysmat, npix=(201, 201), pxl_sze=1, correction=False)
 
 
 if __name__ == '__main__':
-    # main()
+    main()
 
     # fname = '/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0_F1S7.npy'
     # sysmat = np.load(fname)
@@ -116,5 +127,5 @@ if __name__ == '__main__':
     # test_mlem(sysmat_filename='/Users/justinellin/repos/sysmat/design/2021-02-28-2345_SP0.h5',
     #          line_source=False, filt_sigma=0.5, nIterations=100)  # Flood test
 
-    system_matrix_interpolate('/home/justin/repos/sysmat/design/2021-03-30-2347_SP0.h5', x_dim=101)
+    # system_matrix_interpolate('/home/justin/repos/sysmat/design/2021-03-30-2347_SP0.h5', x_dim=101)
 

@@ -240,6 +240,7 @@ def sysmat_processing(files, npix, *args, interp=True, smooth=True, fname='proce
     print("Final shape: ", processed_array.shape)
     np.save(fname, processed_array)
 
+    # TODO: np.savez of system matrix, npix, and total_shape and integrate into recon function workflow
     # smooth_point_response("/home/justin/repos/sysmat/design/2021-03-30-2347_SP0_interp.npy", 201, 7,
     #                       h5file=False, fwhm=2.355 * 1)  # 2.355 * spread defined in gaussian function (uncertainty)
 
@@ -270,11 +271,24 @@ def main():
     # files = [base_folder + file for file in sysmat_files]
     # append_responses(files, save_name='obj_table')
 
-    files = '/home/justin/repos/sysmat/design/2021-04-12-1758_SP0.h5'
-    npix = np.array([121, 31])
+    # files = '/home/justin/repos/sysmat/design/2021-04-12-1758_SP0.h5'
+    # npix = np.array([121, 31])
     # sysmat_processing(files, npix, smooth=False, fname='120mm_wide_FoV_processed_no_smooth')
     # RMS fwhm = 1/np.sqrt(12) * 2.355 = 0.6798
-    sysmat_processing(files, npix, 7, fwhm=0.7, fname='120mm_wide_FoV_processedRMS')
+    # sysmat_processing(files, npix, 7, fwhm=0.7, fname='120mm_wide_FoV_processedRMS')
+
+    # TODO: Uncomment
+    # files =['/home/justin/repos/sysmat/design/2021-04-07-1433_SP0.h5',  # 130 mm
+    #        '/home/justin/repos/sysmat/design/2021-04-12-1758_SP0.h5',  # 120
+    #        '/home/justin/repos/sysmat/design/2021-04-05-2233_SP0.h5',  # 110
+    #        '/home/justin/repos/sysmat/design/2021-04-03-0520_SP0.h5',  # 100 (care there are 2)
+    #        '/home/justin/repos/sysmat/design/2021-04-06-1334_SP0.h5']  # 90
+    # npix = np.array([121, 31])
+    # sysmat_processing(files, npix, 7, fwhm=0.7, fname='Apr14_3d_wide')
+
+    files = ['/home/justin/Desktop/system_responses/Thesis/2021-03-27-1529_SP0.h5']
+    npix = np.array([101, 101])
+    sysmat_processing(files, npix, 7, fwhm=2, fname='Apr14_full')
 
 
 if __name__ == "__main__":
