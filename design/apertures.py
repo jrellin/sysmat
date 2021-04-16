@@ -73,14 +73,20 @@ class Slit(object):
         self.h_ang = np.deg2rad(aper_angle/2.)  # Half of the opening angle of the slit in radians
 
     def ray_pass(self, ray):  # Ray should be an array of 3d points that correspond to the passing ray
-        proj_f = np.abs(np.dot(ray - self.c, self.f))  # project onto normal
-        proj_u = np.abs(np.dot(ray - self.c, self.opening))  # project along opening
-        ray_check = np.zeros(proj_f.size)
-
+        ray_check = np.zeros(ray.shape[0])  # TODO: Care here
         near_slit = (ray[:, 0] >= self.x_lim[0]) & (ray[:, 0] <= self.x_lim[1]) & \
                     (ray[:, 1] >= self.y_lim[0]) & (ray[:, 1] <= self.y_lim[1])
+
+        if not np.count_nonzero(near_slit):  # i.e. if any points near slit, continue to rest of function
+            return ray_check  # TODO: If this works, significant speed up of code expected. This should return zeros
+
+        proj_f = np.abs(np.dot(ray - self.c, self.f))  # project onto normal
+        proj_u = np.abs(np.dot(ray - self.c, self.opening))  # project along opening
+        # ray_check = np.zeros(proj_f.size)  # NOTE: Previously here
+
+        # near_slit = (ray[:, 0] >= self.x_lim[0]) & (ray[:, 0] <= self.x_lim[1]) & \  # Originally here
+        #             (ray[:, 1] >= self.y_lim[0]) & (ray[:, 1] <= self.y_lim[1])
         # near_slit checks if the ray is inside the 2D square that encloses the slit or slit segment
-        # TODO: Fix this check since it clips the corners
 
         chn_out = ((proj_f - (self.tube / 2.)) > 0)  # Projection onto slit axis is outside channel
 

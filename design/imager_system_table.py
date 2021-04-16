@@ -115,7 +115,8 @@ def norm(array):
 
 def ang2arr(angle_degrees):  # This means the beam-axis (+x) is the reference point for slit angles
     angle = np.deg2rad(angle_degrees)
-    return np.array([np.cos(angle), np.sin(angle)])
+    return np.array([np.cos(angle), np.sin(angle), 0])
+# TODO: This was always missing the z coordinate. Didn't seem to affect anything but heads up
 
 
 def main_table():
@@ -172,18 +173,27 @@ def main_table():
                                    loc=np.array([-h_offset, -isv_offset, 0]))
 
     # ====== Open Sides ======
-    bot_colly = -203.2/2
+    cw = 203.2  # collimator width in each dimension
+    bot_colly = -cw/2
     open_width = (5.95 + 61.75)  # plate thickness + bottom of tungsten to plate
     table_posy = bot_colly - open_width
     system.collimator.add_aperture('slit', size=open_width, slit_ax=ang2arr(0), aper_angle=0,
                                    chan_length=(system.collimator.col_half_thickness * 2),
                                    y_min=table_posy, y_max=bot_colly,
-                                   loc=np.array([0, bot_colly - (open_width/2), 0]))
+                                   loc=np.array([0, bot_colly - (open_width/2), 0]))  # bottom opening to table
 
-    system.collimator.add_aperture('slit', size=203.2, aper_angle=0,  # Default is vertical slits
+    # system.collimator.add_aperture('slit', size=cw, aper_angle=0,
+    #                               chan_length=(system.collimator.col_half_thickness * 2),
+    #                               x_min=bot_colly-cw, x_max=bot_colly,
+    #                               loc=np.array([bot_colly - (cw/2), 0, 0]))  # -x side opening
+
+    r_open_wid = 2000  # open to left of collimator
+    right_opening = (cw/2) + (r_open_wid/2)
+    system.collimator.add_aperture('slit', size=r_open_wid, aper_angle=0,
                                    chan_length=(system.collimator.col_half_thickness * 2),
-                                   x_min=bot_colly-203.2, x_max=bot_colly,
-                                   loc=np.array([bot_colly - (203.2/2), 0, 0]))
+                                   x_min=cw/2, x_max=(cw/2) + r_open_wid,
+                                   loc=np.array([right_opening, 0, 0]))  # +x side opening
+
     # ==================== Detectors ====================
 
     x = np.array([1, 0, 0])
@@ -201,11 +211,19 @@ def main_table():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
+    # ~ Beam stop
+    vs = 50
+    offset = 1  # 1 mm gap between this beamstop area and imager FoV
+    fov_x = 1000
+    system.sources.sc = np.array([(cw/2) + offset + (fov_x/2), -10, -20])
+    # Center is 20 mm away from collimator (closer to obj)
+    system.sources.vsze = vs  # 5 CM steps
+    system.sources.npix = np.array([(fov_x//vs) + 1, (200//vs) + 1])
     # ~ Table ~
-    system.sources.sc = np.array([-200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
-    system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
-    system.sources.vsze = 10  # CM steps
-    system.sources.npix = np.array([19, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
+    # system.sources.sc = np.array([-200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
+    # system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
+    # system.sources.vsze = 10  # CM steps
+    # system.sources.npix = np.array([19, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
     # Starts at z = 0 (object plane) then goes back to z = -260, sweeps from neg X (near beam port)
     # to positive X (near target) for each z
 

@@ -109,7 +109,8 @@ def norm(array):
 
 def ang2arr(angle_degrees):  # This means the beam-axis (+x) is the reference point for slit angles
     angle = np.deg2rad(angle_degrees)
-    return np.array([np.cos(angle), np.sin(angle)])
+    return np.array([np.cos(angle), np.sin(angle), 0])
+# TODO: This was always missing the z coordinate. Didn't seem to affect anything but heads up
 
 
 def test(separate=True):
