@@ -61,19 +61,19 @@ class Imager(object):
             self.subsample = kwargs['subsample']
             print("Found subsample!")
         except:
-            self.subsample = 0
+            self.subsample = 1
 
         self.detector_system.initialize_arrays()
 
         return self._point_response_function(tst_pt, **kwargs)
 
-    def generate_sysmat_response(self, **kwargs):  # subsample = 0, mid = True
+    def generate_sysmat_response(self, **kwargs):  # subsample = 1, mid = True
 
         try:
             self.subsample = kwargs['subsample']
         except:
-            self.subsample = 0
-        print("Subsample: ", 2 ** self.subsample)
+            self.subsample = 1
+        print("Subsample: ", self.subsample)
 
         self.detector_system.initialize_arrays()
         tot_img_pxls = self.detector_system.projection.size  # This ensures it is first initialized
@@ -115,8 +115,8 @@ class Imager(object):
             attenuation_collimator = self.collimator._collimator_ray_trace(coll_rays)
             self.detector_system._ray_projection(det_rays,
                                                  em_dir,
-                                                 coll_att=attenuation_collimator/((2 ** self.subsample) ** 2))
-        return self.detector_system.projection  # / ((2 ** self.subsample) ** 2)
+                                                 coll_att=attenuation_collimator/(self.subsample ** 2))
+        return self.detector_system.projection
 
 
 def norm(array):
@@ -214,7 +214,7 @@ def test(separate=True):
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    em_pt = np.array([0, 0, 1500])
+    em_pt = np.array([0, 0, 1500])  # 1500 standard far field point
 
     # ==================== Attenuation ====================
     # system.collimator.mu = 0.04038 * (10 ** 2)
@@ -222,7 +222,7 @@ def test(separate=True):
 
     # ==================== Run and Display ====================
     system.sample_step = 0.1  # in mm, default
-    system.subsample = 0  # powers of 2
+    system.subsample = 1
 
     point_response = system.generate_test_response(em_pt, subsample=system.subsample)
     print('It took ' + str(time.time() - start) + ' seconds.')
@@ -354,7 +354,7 @@ def main():
 
     # ==================== Run and Display ====================
     system.sample_step = 0.1  # in mm, default
-    system.subsample = 0  # powers of 2
+    system.subsample = 1  # samples per detector pixel
 
     system.generate_sysmat_response()  # TODO: Save system specs in generated file
     print('It took ' + str(time.time() - start) + ' seconds.')

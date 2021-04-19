@@ -1,5 +1,6 @@
 import numpy as np
-from scipy.sparse import lil_matrix
+# from scipy.sparse import lil_matrix
+# from fast_histogram import histogram2d
 
 #  Global origin (0,0,0) should be in the center of the collimator on the detector-collimator axis
 # Beam in x-hat direction, vertical is y-hat. And the detector and collimator are in the -z direction
@@ -110,11 +111,13 @@ class Detector(object):
         self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size
         self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size
 
-        self.temp_test = 1
+        # self.ranges = [self.npix[0]/2 * self.pix_size * np.array([-1, 1]).astype('int'),  # ax0
+        #                self.npix[1]/2 * self.pix_size * np.array([-1, 1]).astype('int')]  # ax1
+        # self.ranges = [[-24, 24], [-24, 24]]
 
-    def _detector_sample_pts(self, mid=True, subsample=0):  # end_pts
+    def _detector_sample_pts(self, mid=True, subsample=1):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
-        subpixels = 2 ** subsample
+        subpixels = subsample
         for ax1 in np.arange((-self.npix[1] * subpixels) / 2 + 0.5,
                              (self.npix[1] * subpixels) / 2 + 0.5)[::-1] * self.pix_size / subpixels:
             for ax0 in np.arange((-self.npix[0] * subpixels) / 2 + 0.5,
@@ -149,6 +152,11 @@ class Detector(object):
                                                          self.det_system.imager._ray_det_enter + enter +
                                                          total_intersection)) ** 2)
 
+        # return histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
+        #                   np.dot(inside_rays - self.c, self.axes[1]),
+        #                   range=self.ranges,
+        #                   bins=self.npix,
+        #                   weights=prefactor * prob_interact)[0].T[::-1]
         return np.histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
                               np.dot(inside_rays - self.c, self.axes[1]),
                               bins=(self.hist_ax0, self.hist_ax1),
