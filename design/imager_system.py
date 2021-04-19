@@ -24,6 +24,9 @@ class Imager(object):
         self.sample_area = 0
         self.sample_step = 0.1  # in mm
 
+        self.test = 1
+        self._ray_det_enter = 0
+
     def set_collimator(self, **kwargs):
         self.collimator = Collimator(self, **kwargs)
 
@@ -37,10 +40,23 @@ class Imager(object):
 
     def generate_ray(self, src_pt, det_pt):  # generates the ray once
         em_dir = norm(det_pt - src_pt)
-        max_scalar = (1.01 * self.detector_system.farthest_plane - src_pt[2]) / em_dir[2]  # This is a max length in mm
-        return src_pt + em_dir * np.arange(0, max_scalar + self.sample_step, self.sample_step)[:, np.newaxis], em_dir
 
-    def generate_test_response(self, tst_pt, **kwargs):  # TODO: You are here. Don't forget to set mu and rho
+        dir_col = np.sign(self.collimator.colp[2] - src_pt[2])  # in z-hat, pointing to detector
+        min_sc_coll = ((self.collimator.colp[2] - (dir_col * self.collimator.col_half_thickness)) - src_pt[2]) \
+                      / em_dir[2] - self.sample_step
+        max_sc_coll = ((self.collimator.colp[2] + (dir_col * self.collimator.col_half_thickness)) - src_pt[2]) \
+                      / em_dir[2] + self.sample_step
+
+        min_sc_det = (self.detector_system.closest_plane - src_pt[2]) / em_dir[2]
+        self._ray_det_enter = min_sc_det//self.sample_step  # in sample steps
+
+        max_sc_det = (self.detector_system.farthest_plane - src_pt[2]) / em_dir[2]  # This is a max length in mm
+
+        return src_pt + em_dir * np.arange(min_sc_coll, max_sc_coll + self.sample_step, self.sample_step)[:, np.newaxis], \
+               src_pt + em_dir * np.arange(min_sc_det, max_sc_det + self.sample_step, self.sample_step)[:, np.newaxis], \
+               em_dir  # rays_in_collimator, rays_in_detector, em_dir
+
+    def generate_test_response(self, tst_pt, **kwargs):
         try:
             self.subsample = kwargs['subsample']
             print("Found subsample!")
@@ -48,6 +64,7 @@ class Imager(object):
             self.subsample = 0
 
         self.detector_system.initialize_arrays()
+
         return self._point_response_function(tst_pt, **kwargs)
 
     def generate_sysmat_response(self, **kwargs):  # subsample = 0, mid = True
@@ -94,9 +111,9 @@ class Imager(object):
         self.detector_system.projection.fill(0.0)  # Clear
 
         for det_end_pt in self.detector_system.generate_det_sample_pts(**kwargs):
-            ray, em_dir = self.generate_ray(src_pt, det_end_pt)
-            attenuation_collimator = self.collimator._collimator_ray_trace(ray)
-            self.detector_system._ray_projection(ray,
+            coll_rays, det_rays, em_dir = self.generate_ray(src_pt, det_end_pt)
+            attenuation_collimator = self.collimator._collimator_ray_trace(coll_rays)
+            self.detector_system._ray_projection(det_rays,
                                                  em_dir,
                                                  coll_att=attenuation_collimator/((2 ** self.subsample) ** 2))
         return self.detector_system.projection  # / ((2 ** self.subsample) ** 2)
@@ -226,7 +243,7 @@ def test(separate=True):
             row = plt_index // layout[1]
             col = plt_index % layout[0]
             section = point_response[(12 * row):(12 * (row + 1)), (12 * col):(12 * (col + 1))]
-            point_response[(12 * row):(12 * (row + 1)), (12 * col):(12 * (col + 1))] = np.flipud(section)
+            point_response[(12 * row):(12 * (row + 1)), (12 * col):(12 * (col + 1))] = section # np.flipud(section)
 
         data = point_response
         im = ax.imshow(data)
@@ -344,5 +361,5 @@ def main():
 
 
 if __name__ == "__main__":
-    # test(separate=False)
-    main()
+    test(separate=False)
+    # main()

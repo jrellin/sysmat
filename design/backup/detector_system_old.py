@@ -107,10 +107,10 @@ class Detector(object):
         self.mod_id = np.array([det_id//self.det_system.layout[0], det_id % self.det_system.layout[1]])  # row, col
         # MODIFIED
 
+        # self.f_plane = np.dot(self.c, self.norm)
+        # self.b_plane = np.dot(self.c + ((-1) * self.thickness * self.norm), self.norm)
         self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size
         self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size
-
-        self.temp_test = 1
 
     def _detector_sample_pts(self, mid=True, subsample=0):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
@@ -132,9 +132,12 @@ class Detector(object):
         enter = ((total_intersection > 0) * np.argmax(intersection)) - (total_intersection <= 0)
         # negative 1 if it doesn't intersect
 
+        # return {'total_intersection_steps': total_intersection, 'enter': enter}  # ray_int = ray_array[ent:(ent+tot)]
         return [enter, total_intersection]
 
     def _crystal_interaction_probabilities(self, ray_array, em_dir, step, enter, total_intersection, prefactor=1.0):
+        # em_dir = norm(ray_array[1] - ray_array[0])
+        # step = np.sqrt(((ray_array[1] - ray_array[0])**2).sum())
 
         theta = np.abs(np.dot(np.vstack([self.norm, self.axes]), em_dir))
         area = (self.pix_size * self.pix_size * np.cos(theta[0])) + \
@@ -144,15 +147,15 @@ class Detector(object):
         inside_rays = ray_array[enter:(enter+total_intersection)]
 
         prob_interact = np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0])) * \
-                        (1-np.exp(-self.mu * self.rho * step)) * area\
-                        / (4 * np.pi * (step * np.arange(self.det_system.imager._ray_det_enter + enter,
-                                                         self.det_system.imager._ray_det_enter + enter +
-                                                         total_intersection)) ** 2)
+                        (1-np.exp(-self.mu * self.rho * step)) * \
+                        area / (4 * np.pi * (step * np.arange(enter, enter + total_intersection))**2)
 
         return np.histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
                               np.dot(inside_rays - self.c, self.axes[1]),
                               bins=(self.hist_ax0, self.hist_ax1),
                               weights=prefactor * prob_interact)[0].T[::-1]  # normalize by subpixels
+        # weights = prefactor * prob_interact)[0].T original, unreversed row order
+        # Histogram must be TRANSPOSED  # TODO: Reverse row order works?
 
 
 def norm(array):
