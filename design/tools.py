@@ -286,9 +286,25 @@ def main():
     # npix = np.array([121, 31])
     # sysmat_processing(files, npix, 7, fwhm=0.7, fname='Apr14_3d_wide')
 
-    files = ['/home/justin/Desktop/system_responses/Thesis/2021-03-27-1529_SP0.h5']
-    npix = np.array([101, 101])
-    sysmat_processing(files, npix, 7, fwhm=2, fname='Apr14_full')
+    # files = ['/home/justin/Desktop/system_responses/Thesis/2021-03-27-1529_SP0.h5']
+    # npix = np.array([101, 101])
+    # sysmat_processing(files, npix, 7, fwhm=2, fname='Apr14_full')
+
+    # files = ['/home/justin/repos/sysmat/design/2021-04-19-2004_SP1.h5']
+    # npix = np.array([101, 31])
+    # sysmat_processing(files, npix, 7, fwhm=0.7, fname='Apr20_FoV')
+
+    # files = ['/home/justin/repos/sysmat/design/Apr20_FoV_F0_7S7.npy',
+    #         '/home/justin/repos/sysmat/design/2021-04-16-1340_SP0.h5']
+    # append_responses(files, save_name="Apr20_FoV_beamstop")
+
+    # response = ['/home/justin/repos/sysmat/design/2021-04-19-2004_SP1.h5']
+    # npix = np.array([101, 31])
+    # sysmat_processing(response, npix, 7, fwhm=0.7, fname='Apr28_FoV')
+
+    files = ['/home/justin/repos/sysmat/design/Apr28_FoV_F0_7S7.npy',
+             '/home/justin/repos/sysmat/design/2021-04-23-1259_SP1.h5']
+    append_responses(files, save_name="Apr28_FoV_beamstop")
 
 
 if __name__ == "__main__":

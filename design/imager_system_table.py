@@ -202,7 +202,7 @@ def main_table():
     #                               x_min=bot_colly-cw, x_max=bot_colly,
     #                               loc=np.array([bot_colly - (cw/2), 0, 0]))  # -x side opening
 
-    r_open_wid = 2000  # open to left of collimator
+    r_open_wid = 2000  # open to right of collimator
     right_opening = (cw/2) + (r_open_wid/2)
     system.collimator.add_aperture('slit', size=r_open_wid, aper_angle=0,
                                    chan_length=(system.collimator.col_half_thickness * 2),
@@ -228,13 +228,15 @@ def main_table():
 
     # ==================== Sources ====================
     # ~ Beam stop
-    vs = 50
+    vs = 2
     offset = 1  # 1 mm gap between this beamstop area and imager FoV
-    fov_x = 1000
-    system.sources.sc = np.array([(cw/2) + offset + (fov_x/2), -10, -20])
+    fov_x = 200
+    fov_y = 60
+    system.sources.sc = np.array([(cw / 2) + offset + (fov_x / 2), -10, -20])
+    # system.sources.sc = np.array([(cw/2) + offset + (fov_x/2), -10, -20])  # CW is proper
     # Center is 20 mm away from collimator (closer to obj)
-    system.sources.vsze = vs  # 5 CM steps
-    system.sources.npix = np.array([(fov_x//vs) + 1, (200//vs) + 1])
+    system.sources.vsze = vs  # 2 mm steps
+    system.sources.npix = np.array([(fov_x//vs) + 1, (fov_y//vs) + 1])
     # ~ Table ~
     # system.sources.sc = np.array([-200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
     # system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
@@ -274,5 +276,5 @@ def main_table():
 
 
 if __name__ == "__main__":
-    # TODO: Problem with _check_intersection in detector_system if source point past initial plane
+    # TODO: Check that code here matches imager_system
     main_table()
