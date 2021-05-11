@@ -334,6 +334,14 @@ def main():
                                    x_min=cw/2, x_max=(cw/2) + r_open_wid,
                                    loc=np.array([right_opening, 0, 0]))  # +x side opening
 
+    # Left Side opening
+    l_open_wid = 2000  # open to right of collimator
+    left_opening = -((cw / 2) + (l_open_wid / 2))
+    system.collimator.add_aperture('slit', size=l_open_wid, aper_angle=0,
+                                   chan_length=(system.collimator.col_half_thickness * 2),
+                                   x_min=-((cw / 2) + l_open_wid), x_max=-(cw / 2),
+                                   loc=np.array([left_opening, 0, 0]))  # +x side opening
+
     # ==================== Detectors ====================
     # layout = np.array([4, 4])
     # system.detector_system.layout = layout  # could just put in __init__ of Detector_System
@@ -353,18 +361,31 @@ def main():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    # system.sources.sc = np.array([0, -10, -20])  # This is at 110 mm collim to source distance
+    # system.sources.sc = np.array([0, 61, -20])  # This is at 110 mm collim to source distance
     # system.sources.vsze = 2
-    # system.sources.npix = np.array([101, 31])
+    # system.sources.npix = np.array([101, 39])
 
+    # Beam Port (5/9/21)
+    fov_x = 1000
+    cw = 200
+    vs = 10  # cm
+    offset = 1
+    system.sources.sc = np.array([-((cw / 2) + offset + (fov_x / 2)), -10, -20])
+    print("System Source Location: ", system.sources.sc)
+    system.sources.vsze = vs
+    system.sources.npix = np.array([(fov_x // vs) + 1, 3])
+    print("npix: ", system.sources.npix)
+    # Beam Port
+
+    # Right Side Open Space (4/23)
+    # cw = 200  # should be 203.2, but this is field of view of collimator
+    # vs = 2
+    # offset = 1  # 1 mm gap between this beamstop area and imager FoV
+    # fov_x, fov_y = [200, 60]
+    # system.sources.sc = np.array([(cw / 2) + offset + (fov_x / 2), -10, -20])
+    # system.sources.vsze = vs  # 2 mm steps
+    # system.sources.npix = np.array([(fov_x//vs) + 1, (fov_y//vs) + 1])
     # Right Side Open Space
-    cw = 200  # should be 203.2, but this is field of view of collimator
-    vs = 2
-    offset = 1  # 1 mm gap between this beamstop area and imager FoV
-    fov_x, fov_y = [200, 60]
-    system.sources.sc = np.array([(cw / 2) + offset + (fov_x / 2), -10, -20])
-    system.sources.vsze = vs  # 2 mm steps
-    system.sources.npix = np.array([(fov_x//vs) + 1, (fov_y//vs) + 1])
 
     # ==================== Attenuation ====================
     # system.collimator.mu = 0.04038 * (10 ** 2)
@@ -372,7 +393,7 @@ def main():
 
     # ==================== Run and Display ====================
     system.sample_step = 0.1  # in mm, default
-    system.subsample = 1  # samples per detector pixel
+    system.subsample = 1  # samples per detector pixel. TODO: Check if this is right before running
 
     system.generate_sysmat_response()  # TODO: Save system specs in generated file
     print('It took ' + str(time.time() - start) + ' seconds.')

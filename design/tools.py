@@ -176,7 +176,7 @@ def append_FoVs(files, save_name='appended', first_dim_pxls=(101, 101), after=Tr
     else:
         tot_arr = np.concatenate(tmp_list[::-1], axis=2)
 
-    reshaped_arr = tot_arr.transpose(1, 2, 0).reshape([tot_pxls, det_pxls])
+    reshaped_arr = tot_arr.transpose((1, 2, 0)).reshape([tot_pxls, det_pxls])
     np.save(save_name, reshaped_arr)
     print("Final shape: ", reshaped_arr.shape)  # TODO: Test this with table measurements
 
@@ -188,6 +188,25 @@ def load_h5file(filepath):
         return h5file
     else:
         raise ValueError('{fi} is not a hdf5 file!'.format(fi=filepath))
+
+
+def mask_edge_pixels(mods=None):
+    """The purpose of this function is to mask edge pixels and to provide a similar mask for system response i.e.
+     cut out edge pixels from projection AND system matrix"""
+    if mods is None:
+        mods = np.arange(16)
+
+    mod_mask = []
+    for i in np.arange(16):
+        if np.isin(i, mods):
+            mask = np.zeros([12, 12])
+            mask[1:-1, 1:-1] = 1
+        else:
+            mask = np.ones([12, 12])
+        mod_mask.append(mask)
+    proj_mask = np.block([mod_mask[col:col + 4] for col in np.arange(0, len(mod_mask), 4)])
+    sysmat_mask = proj_mask.ravel()
+    return proj_mask, sysmat_mask
 
 
 def sysmat_processing(files, npix, *args, interp=True, smooth=True, fname='processed', **kwargs):
