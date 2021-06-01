@@ -296,7 +296,6 @@ def main():
     # RMS fwhm = 1/np.sqrt(12) * 2.355 = 0.6798
     # sysmat_processing(files, npix, 7, fwhm=0.7, fname='120mm_wide_FoV_processedRMS')
 
-    # TODO: Uncomment
     # files =['/home/justin/repos/sysmat/design/2021-04-07-1433_SP0.h5',  # 130 mm
     #        '/home/justin/repos/sysmat/design/2021-04-12-1758_SP0.h5',  # 120
     #        '/home/justin/repos/sysmat/design/2021-04-05-2233_SP0.h5',  # 110
@@ -326,5 +325,25 @@ def main():
     append_responses(files, save_name="Apr28_FoV_beamstop")
 
 
+def main2():
+
+    # Start Table appends
+    # table_files = ['/home/justin/repos/sysmat/design/system_responses/2021-03-31-1633_SP0.h5',  # -x (beamport)
+    #                '/home/justin/repos/sysmat/design/system_responses/2021-03-30-2207_SP0.h5',  # center
+    #               '/home/justin/repos/sysmat/design/2021-05-31-2209_SP1.h5']  # +x (beamstop)
+    # first_dpxls = np.array([19, 21, 19])  # Table, all z dimensions are 23
+    # append_FoVs(table_files, first_dim_pxls=first_dpxls, save_name='june1_table')
+    # End Table appends
+
+    region_files = ['/home/justin/repos/sysmat/design/2021-04-19-2004_SP1.h5',  # FOV
+                    '/home/justin/repos/sysmat/design/2021-05-08-2118_SP1.h5',  # Top FOV
+                    '/home/justin/repos/sysmat/design/2021-05-08-1620_SP1.h5',  # Bot FOV
+                    '/home/justin/repos/sysmat/design/june1_table.npy',  # Wide table
+                    '/home/justin/repos/sysmat/design/2021-05-09-1531_SP1.h5',  # Beam Port
+                    '/home/justin/repos/sysmat/design/2021-04-23-1259_SP1.h5']  # Beam Stop
+
+    append_responses(region_files, save_name="june1_full_response")
+
+
 if __name__ == "__main__":
-    main()
+    main2()

@@ -325,7 +325,16 @@ def main():
                                    x_min=-h_offset, x_max=h_offset,
                                    loc=np.array([-h_offset, -isv_offset, 0]))
 
-    # Open spaces
+    # ====== Open Sides ======
+    cw = 203.2  # collimator width in each dimension  # TODO: Delete this for faster calculation
+    bot_colly = -cw / 2
+    open_width = (5.95 + 61.75)  # plate thickness + bottom of tungsten to plate
+    table_posy = bot_colly - open_width
+    system.collimator.add_aperture('slit', size=open_width, slit_ax=ang2arr(0), aper_angle=0,
+                                   chan_length=(system.collimator.col_half_thickness * 2),
+                                   y_min=table_posy, y_max=bot_colly,
+                                   loc=np.array([0, bot_colly - (open_width / 2), 0]))  # bottom opening to table
+
     cw = 203.2  # collimator physical width
     r_open_wid = 2000  # open to right of collimator
     right_opening = (cw/2) + (r_open_wid/2)
@@ -340,7 +349,7 @@ def main():
     system.collimator.add_aperture('slit', size=l_open_wid, aper_angle=0,
                                    chan_length=(system.collimator.col_half_thickness * 2),
                                    x_min=-((cw / 2) + l_open_wid), x_max=-(cw / 2),
-                                   loc=np.array([left_opening, 0, 0]))  # +x side opening
+                                   loc=np.array([left_opening, 0, 0]))  # -x side opening
 
     # ==================== Detectors ====================
     # layout = np.array([4, 4])
@@ -361,20 +370,28 @@ def main():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    # system.sources.sc = np.array([0, 61, -20])  # This is at 110 mm collim to source distance
-    # system.sources.vsze = 2
-    # system.sources.npix = np.array([101, 39])
+    # system.sources.sc = np.array([0, -10, -20])  # This is at 110 mm collim to source distance
+    # system.sources.vsze = 1  # TODO: Change this is needed
+    # system.sources.npix = np.array([201, 61])
+
+    # ~ Table ~
+    system.sources.sc = np.array([200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
+    system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
+    system.sources.vsze = 10  # CM steps
+    system.sources.npix = np.array([19, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
+    # Starts at z = 0 (object plane) then goes back to z = -260, sweeps from neg X (near beam port)
+    # to positive X (near target) for each z
 
     # Beam Port (5/9/21)
-    fov_x = 1000
-    cw = 200
-    vs = 10  # cm
-    offset = 1
-    system.sources.sc = np.array([-((cw / 2) + offset + (fov_x / 2)), -10, -20])
-    print("System Source Location: ", system.sources.sc)
-    system.sources.vsze = vs
-    system.sources.npix = np.array([(fov_x // vs) + 1, 3])
-    print("npix: ", system.sources.npix)
+    # fov_x = 1000
+    # cw = 200
+    # vs = 10  # cm
+    # offset = 1
+    # system.sources.sc = np.array([-((cw / 2) + offset + (fov_x / 2)), -10, -20])
+    # print("System Source Location: ", system.sources.sc)
+    # system.sources.vsze = vs
+    # system.sources.npix = np.array([(fov_x // vs) + 1, 3])
+    # print("npix: ", system.sources.npix)
     # Beam Port
 
     # Right Side Open Space (4/23)
@@ -393,7 +410,7 @@ def main():
 
     # ==================== Run and Display ====================
     system.sample_step = 0.1  # in mm, default
-    system.subsample = 1  # samples per detector pixel. TODO: Check if this is right before running
+    system.subsample = 2  # samples per detector pixel. TODO: Check if this is right before running
 
     system.generate_sysmat_response()  # TODO: Save system specs in generated file
     print('It took ' + str(time.time() - start) + ' seconds.')

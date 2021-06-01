@@ -228,20 +228,21 @@ def main_table():
 
     # ==================== Sources ====================
     # ~ Beam stop
-    vs = 2
-    offset = 1  # 1 mm gap between this beamstop area and imager FoV
-    fov_x = 200
-    fov_y = 60
-    system.sources.sc = np.array([(cw / 2) + offset + (fov_x / 2), -10, -20])
-    # system.sources.sc = np.array([(cw/2) + offset + (fov_x/2), -10, -20])  # CW is proper
+    # vs = 2
+    # offset = 1  # 1 mm gap between this beamstop area and imager FoV
+    # fov_x = 200
+    # fov_y = 60
+    # system.sources.sc = np.array([(cw / 2) + offset + (fov_x / 2), -10, -20])
+    ## system.sources.sc = np.array([(cw/2) + offset + (fov_x/2), -10, -20])  # CW is proper
     # Center is 20 mm away from collimator (closer to obj)
-    system.sources.vsze = vs  # 2 mm steps
-    system.sources.npix = np.array([(fov_x//vs) + 1, (fov_y//vs) + 1])
+    # system.sources.vsze = vs  # 2 mm steps
+    # system.sources.npix = np.array([(fov_x//vs) + 1, (fov_y//vs) + 1])
+
     # ~ Table ~
-    # system.sources.sc = np.array([-200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
-    # system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
-    # system.sources.vsze = 10  # CM steps
-    # system.sources.npix = np.array([19, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
+    system.sources.sc = np.array([200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
+    system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
+    system.sources.vsze = 10  # CM steps
+    system.sources.npix = np.array([19, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
     # Starts at z = 0 (object plane) then goes back to z = -260, sweeps from neg X (near beam port)
     # to positive X (near target) for each z
 
