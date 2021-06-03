@@ -2,7 +2,7 @@
 
 Simple package to generate imaging system responses. 'imager_system.py' can be run from terminal with set parameters using main() as an example for any arbitrary configutation of detectors, slits/pinholes, and source geometries
 
-To Do: Text Config Parser similar to sis3316-jrellin code package
+Current Version: This branch is meant to be a cleaned up version of master with removal of superfluous code and fixes/speedups in system response calculations
 
 ## Current Requirements
 
