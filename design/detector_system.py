@@ -33,18 +33,16 @@ class Detector_System(object):  # detectors must be defined from upper left to u
                       (np.sign(new_detector.c[2]) * (np.max(new_detector.npix) * new_detector.pix_size/2))  # Added
         if np.abs(far_plane) > self.farthest_plane:
             self.farthest_plane = far_plane
-        if np.abs(close_plane) < self.closest_plane:  # TODO: Check this works
+        if np.abs(close_plane) < self.closest_plane:
             self.closest_plane = close_plane
 
         self.num_detectors += 1
 
     def generate_det_sample_pts(self, **kwargs):
-        # ind = 0
         for det in self.detectors:
-            # print("Ray Tracing through Detector: ", ind)
-            # ind += 1
             for one_pt in det._detector_sample_pts(**kwargs):
-                yield one_pt
+                # yield one_pt  # TODO: This was old yield
+                yield one_pt, det.norm
 
     def initialize_arrays(self):  # det_num, enter, total_intersection
         self.intersect_table = np.zeros([self.num_detectors, 3], dtype=np.int32)
@@ -73,9 +71,9 @@ class Detector_System(object):  # detectors must be defined from upper left to u
             # self.imager.projection[start_row:(start_row+cur_det.npix[0]), start_col:(start_col+cur_det.npix[1])] += \
             self.projection[start_row:(start_row + cur_det.npix[0]), start_col:(start_col + cur_det.npix[1])] += \
                     cur_det._crystal_interaction_probabilities(ray, em_dir,
-                                                           self.imager.sample_step,
-                                                           enter, total_intersection,
-                                                           prefactor=prev_att) * coll_att
+                                                               self.imager.sample_step,
+                                                               enter, total_intersection,
+                                                               prefactor=prev_att) * coll_att
             prev_intersection += total_intersection
 
 
@@ -111,10 +109,6 @@ class Detector(object):
         self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size
         self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size
 
-        # self.ranges = [self.npix[0]/2 * self.pix_size * np.array([-1, 1]).astype('int'),  # ax0
-        #                self.npix[1]/2 * self.pix_size * np.array([-1, 1]).astype('int')]  # ax1
-        # self.ranges = [[-24, 24], [-24, 24]]
-
     def _detector_sample_pts(self, mid=True, subsample=1):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
         subpixels = subsample
@@ -138,25 +132,23 @@ class Detector(object):
         return [enter, total_intersection]
 
     def _crystal_interaction_probabilities(self, ray_array, em_dir, step, enter, total_intersection, prefactor=1.0):
-
-        theta = np.abs(np.dot(np.vstack([self.norm, self.axes]), em_dir))
-        area = (self.pix_size * self.pix_size * np.cos(theta[0])) + \
-               (self.pix_size * self.thickness * np.cos(theta[1])) + \
-               (self.pix_size * self.thickness * np.cos(theta[2]))
+        # TODO: This whole section is unique to current version, em_dir not needed but kept to be close to main code
+        # theta = np.abs(np.dot(np.vstack([self.norm, self.axes]), em_dir))
+        # area = (self.pix_size * self.pix_size * np.cos(theta[0])) + \
+        #        (self.pix_size * self.thickness * np.cos(theta[1])) + \
+        #        (self.pix_size * self.thickness * np.cos(theta[2]))
 
         inside_rays = ray_array[enter:(enter+total_intersection)]
 
+        # prob_interact =  area * np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0]))
+        #   TODO: second line is a calculated area
         prob_interact = np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0])) * \
-                        (1-np.exp(-self.mu * self.rho * step)) * area\
-                        / (4 * np.pi * (step * np.arange(self.det_system.imager._ray_det_enter + enter,
-                                                         self.det_system.imager._ray_det_enter + enter +
-                                                         total_intersection)) ** 2)
+                        (self.pix_size ** 2) * \
+                        (1 - np.exp(-self.mu * self.rho * step)) * \
+                        (4 * np.pi * (step * np.arange(self.det_system.imager._ray_det_enter + enter,
+                                                       self.det_system.imager._ray_det_enter + enter +
+                                                       total_intersection)) ** 2)
 
-        # return histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
-        #                   np.dot(inside_rays - self.c, self.axes[1]),
-        #                   range=self.ranges,
-        #                   bins=self.npix,
-        #                   weights=prefactor * prob_interact)[0].T[::-1]
         return np.histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
                               np.dot(inside_rays - self.c, self.axes[1]),
                               bins=(self.hist_ax0, self.hist_ax1),

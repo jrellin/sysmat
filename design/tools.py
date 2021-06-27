@@ -335,15 +335,28 @@ def main2():
     # append_FoVs(table_files, first_dim_pxls=first_dpxls, save_name='june1_table')
     # End Table appends
 
-    region_files = ['/home/justin/repos/sysmat/design/2021-04-19-2004_SP1.h5',  # FOV
+    region_files = ['/home/justin/repos/sysmat_current/sysmat/design/2021-06-11-1110_SP1.h5',  # FOV
+                    # '/home/justin/repos/sysmat/design/2021-04-19-2004_SP1.h5',  # Old FOV
                     '/home/justin/repos/sysmat/design/2021-05-08-2118_SP1.h5',  # Top FOV
                     '/home/justin/repos/sysmat/design/2021-05-08-1620_SP1.h5',  # Bot FOV
                     '/home/justin/repos/sysmat/design/june1_table.npy',  # Wide table
                     '/home/justin/repos/sysmat/design/2021-05-09-1531_SP1.h5',  # Beam Port
                     '/home/justin/repos/sysmat/design/2021-04-23-1259_SP1.h5']  # Beam Stop
 
-    append_responses(region_files, save_name="june1_full_response")
+    # append_responses(region_files, save_name="june1_full_response")
+    append_responses(region_files, save_name="june15_full_response")
+
+
+def main3():
+    region_files = ['/home/justin/repos/sysmat_current/sysmat/design/2021-06-17-1746_SP1.h5',  # FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-1454_SP1.h5',  # Top FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-0957_SP1.h5',  # Bot FOV
+                    # '/home/justin/repos/sysmat/design/june1_table.npy',  # Wide table, redo
+                    # '/home/justin/repos/sysmat/design/2021-05-09-1531_SP1.h5',  # Beam Port, redo
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-22-0959_SP1.h5']  # Beam Stop
+
+    append_responses(region_files, save_name="june22_full_response")
 
 
 if __name__ == "__main__":
-    main2()
+    main3()
