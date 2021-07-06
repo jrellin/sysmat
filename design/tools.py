@@ -347,7 +347,7 @@ def main2():
     append_responses(region_files, save_name="june15_full_response")
 
 
-def main3():
+def main3():  # Unfolded response June 22
     region_files = ['/home/justin/repos/sysmat_current/sysmat/design/2021-06-17-1746_SP1.h5',  # FOV
                     '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-1454_SP1.h5',  # Top FOV
                     '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-0957_SP1.h5',  # Bot FOV
@@ -358,5 +358,26 @@ def main3():
     append_responses(region_files, save_name="june22_full_response")
 
 
+def main4():  # Folded Response June 30
+    region_files = ['/home/justin/repos/sysmat_current/sysmat/design/June30_folded_g1.npy',  # FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-1454_SP1.h5',  # Top FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-0957_SP1.h5',  # Bot FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-22-0959_SP1.h5']  # Beam Stop
+    append_responses(region_files, save_name="june30_full_response")
+
+
+def main5():  # Unfolded Response July 6 (for July 3rd sysmat), correct detector axes
+    # TODO: calculate sysmat for other regions. Only FOV done
+    region_files = [  # '/home/justin/repos/sysmat_current/sysmat/design/2021-07-03-1015_SP1.h5',  # FOV, unfolded
+                    '/home/justin/repos/sysmat_current/sysmat/design/July6_folded_g4.npy',  # FOV, folded
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-1454_SP1.h5',  # Top FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-21-0957_SP1.h5',  # Bot FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-06-22-0959_SP1.h5']  # Beam Stop
+    # append_responses(region_files, save_name="july6_full_response")  # unfolded
+    append_responses(region_files, save_name="july6_full_response_folded")  # folded
+
+
 if __name__ == "__main__":
-    main3()
+    # main3()
+    # main4()
+    main5()

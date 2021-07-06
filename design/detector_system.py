@@ -87,13 +87,13 @@ class Detector(object):
     # https://physics.nist.gov/PhysRefData/Xcom/html/xcom1.html for Lu2SiO4
 
     def __init__(self, container,  # MODIFIED
-                 center=(0, 0, -200),  # mm Coordinates of the center face of
-                 # the detector (facing from the object plane)
+                 center=(0, 0, -200),
+                 # mm Coordinates of the center face of the detector (facing from the object plane)
                  det_norm=(0, 0, 1),  # unit vector facing collimator
                  det_thickness=20,  # in mm
                  npix_1=12, npix_2=12,
                  pxl_sze=4,  # in mm
-                 ax_1=(1, 0, 0), ax_2=(0, 1, 0),
+                 # ax_1=(1, 0, 0), ax_2=(0, 1, 0),  # July 3 -Commented out
                  det_id=0):
         self.det_system = container  # MODIFIED
         self.c = np.array(center)
@@ -101,13 +101,36 @@ class Detector(object):
         self.thickness = det_thickness
         self.npix = np.array((npix_1, npix_2))
         self.pix_size = pxl_sze
-        self.axes = np.array([ax_1, ax_2])
+        # self.axes = np.array([ax_1, ax_2])  # July 3 - Commented out
+
+        # JULY 3 ADDED TOP
+        self._norm = None
+        self.axes = np.array([(1, 0, 0), (0, 1, 0)])
+        self.norm = np.array(det_norm)
+        # JULY 3 ADDED BOT
+
         self.det_id = det_id
         self.mod_id = np.array([det_id//self.det_system.layout[0], det_id % self.det_system.layout[1]])  # row, col
         # MODIFIED
 
         self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size
         self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size
+
+    # ADDITION TOP - July 3, 2021
+    @property
+    def norm(self):
+        return self._norm
+
+    @norm.setter
+    def norm(self, value):
+        n = np.array(value)
+        v_dir = np.array((0, 1, 0))  # vertical direction
+        h_axis = np.cross(v_dir, n)  # horizontal direction
+        new_v_dir = np.cross(n, h_axis)
+        self.axes = np.array([norm(h_axis), norm(new_v_dir)])
+        self._norm = norm(n)
+
+    # ADDITION BOT - July 3, 2021
 
     def _detector_sample_pts(self, mid=True, subsample=1):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
