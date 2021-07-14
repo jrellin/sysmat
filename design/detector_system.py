@@ -131,6 +131,26 @@ class Detector(object):
         self._norm = norm(n)
 
     # ADDITION BOT - July 3, 2021
+    
+    # =================== Only used with angle_generator.py ===================
+    # TOP
+    def face_pts(self, back=False):  # back is True means back plane, TODO: Add to detector_system.py
+        ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5),
+                                (self.npix[0] / 2. + 0.5)) * self.pix_size
+
+        ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5),
+                                (self.npix[1] / 2. + 0.5))[::-1] * self.pix_size
+    # Reversed ordering
+
+        ax0_vec = np.outer(ax0_scalars, self.axes[0])
+        ax1_vec = np.outer(ax1_scalars, self.axes[1])
+
+        centers = self.c +  (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3)
+
+        # return centers.reshape(self.npix[0], self.npix[1]) + (back * (-1) * self.thickness * self.norm)
+        return centers + (back * (-1) * self.thickness * self.norm)
+    # BOT
+    # =================== Only used with angle_generator.py ===================
 
     def _detector_sample_pts(self, mid=True, subsample=1):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
