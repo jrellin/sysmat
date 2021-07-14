@@ -93,21 +93,61 @@ class Detector(object):
                  det_thickness=20,  # in mm
                  npix_1=12, npix_2=12,
                  pxl_sze=4,  # in mm
-                 ax_1=(1, 0, 0), ax_2=(0, 1, 0),
+                 # ax_1=(1, 0, 0), ax_2=(0, 1, 0),  TODO: Commented out
                  det_id=0):
         self.det_system = container  # MODIFIED
         self.c = np.array(center)
-        self.norm = np.array(det_norm)
+        # self.norm = np.array(det_norm)  # TODO: Moved
         self.thickness = det_thickness
         self.npix = np.array((npix_1, npix_2))
         self.pix_size = pxl_sze
-        self.axes = np.array([ax_1, ax_2])
+
+        self._norm = None  # TODO: Added
+        self.axes = np.array([(1, 0, 0), (0, 1, 0)])  # TODO: Added. ax1, ax2
+        self.norm = np.array(det_norm)
+
         self.det_id = det_id
         self.mod_id = np.array([det_id//self.det_system.layout[0], det_id % self.det_system.layout[1]])  # row, col
         # MODIFIED
 
         self.hist_ax0 = (np.arange(-self.npix[0]/2., self.npix[0]/2. + 1)) * self.pix_size
         self.hist_ax1 = (np.arange(-self.npix[1]/2., self.npix[1]/2. + 1)) * self.pix_size
+
+    # ADDITION TOP
+    @property
+    def norm(self):
+        return self._norm
+
+    @norm.setter
+    def norm(self, value):
+        n = np.array(value)
+        v_dir = np.array((0, 1, 0))  # vertical direction
+        h_axis = np.cross(v_dir, n)  # horizontal direction
+        new_v_dir = np.cross(n, h_axis)
+        self.axes = np.array([norm(h_axis), norm(new_v_dir)])
+        # print("Self.axes: ", self.axes[1])
+        self._norm = norm(n)
+    # ADDITION BOT
+
+    # =================== Only used with angle_generator.py ===================
+    # TOP
+    def face_pts(self, back=False):  # back is True means back plane, TODO: Add to detector_system.py
+        ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5),
+                                (self.npix[0] / 2. + 0.5)) * self.pix_size
+
+        ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5),
+                                (self.npix[1] / 2. + 0.5))[::-1] * self.pix_size
+    # Reversed ordering
+
+        ax0_vec = np.outer(ax0_scalars, self.axes[0])
+        ax1_vec = np.outer(ax1_scalars, self.axes[1])
+
+        centers = self.c +  (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3)
+
+        # return centers.reshape(self.npix[0], self.npix[1]) + (back * (-1) * self.thickness * self.norm)
+        return centers + (back * (-1) * self.thickness * self.norm)
+    # BOT
+    # =================== Only used with angle_generator.py ===================
 
     def _detector_sample_pts(self, mid=True, subsample=1):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
