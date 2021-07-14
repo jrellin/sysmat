@@ -302,36 +302,28 @@ def plot_cnr_over_iterations_tst(max_iterations=100):
     plt.show()
 
 
-def plot_cnrs_and_iters(cnr_file, center=(0, -10), x_dim=101, y_dim=31, pxl_size=2):  # TODO: Take in npz file, plot max_cnr and iter values as images on 1 plot
+def plot_cnrs_and_iters(cnr_file, center=(0, -10), x_dim=101, y_dim=31, pxl_size=2):
     # cnr_file = '/Users/justinellin/PycharmProjects/varian/Processed/cnr_data_06-21.npz'
     # data = np.load(cnr_file)
-
     with np.load(cnr_file) as data:
         max_cnr = data['max_cnr']
         iter_max = data['iter_max_cnr']
-
     # fig = plt.figure(figsize=(9, 5), constrained_layout=False)
-
     extent_x = np.array([1, 1]) * center[0] + (np.array([-1, 1]) * (x_dim * pxl_size)) / 2
     extent_y = np.array([1, 1]) * center[1] + (np.array([-1, 1]) * (y_dim * pxl_size)) / 2
-
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(8, 2))
     im1 = ax1.imshow(max_cnr, cmap='magma', origin='upper', interpolation='nearest', extent=np.append(extent_x, extent_y))
     ax1.set_xlabel('mm')
     ax1.set_ylabel('mm')
     ax1.set_title("Max CNR")
     fig.colorbar(im1, ax=ax1, fraction=0.015, pad=0.04)
-
     im2 = ax2.imshow(iter_max, cmap='viridis', origin='upper', interpolation='nearest', extent=np.append(extent_x, extent_y))
     ax2.set_xlabel('mm')
     ax2.set_ylabel('mm')
     ax2.set_title("Iteration Max")
     fig.colorbar(im2, ax=ax2, fraction=0.015, pad=0.04)
-
     fig.suptitle('CNR analysis (first 100 iterations)')
-
     fig.tight_layout()
-
     plt.show()
 
 
@@ -350,6 +342,7 @@ def main():
 def generate_psf_file(sfname, max_iterations=100, min_iteration=10, size=(201, 61),
                       cols=None, rows=None,
                       gauss_scale=0.5, save_images=False, save_cnr_data=False, center=(0, 0), pxl_sze=1,
+                      nbs=2,
                       **kwargs):
     psf = psf_generator(sfname, size, center=center, pxl_sze=pxl_sze)
 
@@ -375,7 +368,7 @@ def generate_psf_file(sfname, max_iterations=100, min_iteration=10, size=(201, 6
         psf.row = row
         for col in cols:
             psf.col = col
-            psf.set_mask()
+            psf.set_mask(nbs=nbs)
             psf.generate_projection(poisson=False)
             psf.compute_mlem_full(nIterations=1, initial_guess=None, filt_sigma=gauss_scale / 2.355,
                                   sensitivity=sensitivity,  # TODO (1): Add or remove
@@ -421,28 +414,32 @@ def save_psf_file():
     # rows = [15, 16, 17]
     cols = None
     rows = None
-
     t1 = time.time()
+    # sfname = '/home/justin/repos/sysmat_current/sysmat/design/2021-06-17-1746_SP1.h5'
+    # June 30, gauss = 1, nbrs = 2 with 6-17-1746
 
-    sfname = '/home/justin/repos/sysmat_current/sysmat/design/2021-06-17-1746_SP1.h5'
-
+    sfname = '/home/justin/repos/sysmat_current/sysmat/design/2021-07-03-1015_SP1.h5'
+    # July 3 (07-03-1015), gauss = 4, nbrs = 4/2.355 * 2 - 0.5 = 3 rounded
     generate_psf_file(sfname, max_iterations=100, min_iteration=10,
                       cols=cols, rows=rows, size=[201, 61],
-                      gauss_scale=1, save_images=True, save_cnr_data=True, verbose=False, quiet=True,
-                      pxl_sze=1, center=(0, -10))
-    # TODO: gauss_scale set to 1 i.e. 2 mm
+                      gauss_scale=4, save_images=True, save_cnr_data=True, verbose=False, quiet=True,
+                      pxl_sze=1, center=(0, -10), nbs=3)
+
     print("Total time: ", time.time() - t1)
 
 
 def psf_fold_sysmat(sysmat_fname, psf_fname, folded_response_fname='folded_response'):
-    sysmat = load_sysmat(sysmat_fname)
+    sysmat = load_sysmat(sysmat_fname).T  # TODO: This transpose is an issue
     folded_sysmat = np.zeros_like(sysmat)
-
     h5file = tables.open_file(psf_fname, 'r')
     psfs = h5file.root.psf
+
+    tot_rows = psfs.nrows
+    print("Total Rows: ", tot_rows)
     for idx, psf in enumerate(psfs):  # tables.iterrows
         folded_sysmat[idx] = np.sum(psf[:, np.newaxis] * sysmat, axis=0)
-
+        if idx % 1000 == 1:
+            print("Percent Done: ", idx/tot_rows)
     # sysmat_file_obj.root.sysmat[:].T
     np.save(folded_response_fname, folded_sysmat)
 
@@ -450,6 +447,14 @@ def psf_fold_sysmat(sysmat_fname, psf_fname, folded_response_fname='folded_respo
 if __name__ == "__main__":
     # main()
     # plot_cnr_over_iterations_tst(max_iterations=100)
+    # plot_cnrs_and_iters('/home/justin/repos/sysmat_current/sysmat/design/Processed/cnr_data_07-05.npz'
+    #                   , center=(0, -10), x_dim=201, y_dim=61, pxl_size=1)
+
     # save_psf_file()
-    psf_fold_sysmat('test', 'test2')
-    # TODO: Generate new psfs for gauss scale factor of 4 (4/2.355) = 4 mm FWHM.. nbs = 2 * (4/2.355) -0.5 = 3 (round)
+    # psf_fold_sysmat('/home/justin/repos/sysmat_current/sysmat/design/2021-06-17-1746_SP1.h5',
+    #                '/home/justin/repos/sysmat_current/sysmat/design/Processed/psf_2021-06-17-1746_SP1_proc_06-26.h5',
+    #                folded_response_fname='June30_folded_g1')
+
+    psf_fold_sysmat('/home/justin/repos/sysmat_current/sysmat/design/2021-07-03-1015_SP1.h5',
+                    '/home/justin/repos/sysmat_current/sysmat/design/Processed/psf_2021-07-03-1015_SP1_proc_07-04.h5',
+                    folded_response_fname='July6_folded_g4')

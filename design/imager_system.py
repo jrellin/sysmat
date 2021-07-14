@@ -189,6 +189,7 @@ def main():
                                    loc=np.array([-h_offset, -isv_offset, 0]))
 
     # ====== Open Sides ======
+    # Bottom Opening
     cw = 203.2  # collimator width in each dimension  # TODO: Delete this for faster calculation
     bot_colly = -cw / 2
     open_width = (5.95 + 61.75)  # plate thickness + bottom of tungsten to plate
@@ -198,6 +199,7 @@ def main():
                                    y_min=table_posy, y_max=bot_colly,
                                    loc=np.array([0, bot_colly - (open_width / 2), 0]))  # bottom opening to table
 
+    # Right Side Opening
     cw = 203.2  # collimator physical width
     r_open_wid = 2000  # open to right of collimator
     right_opening = (cw/2) + (r_open_wid/2)
@@ -233,10 +235,10 @@ def main():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    # system.sources.sc = np.array([0, -10, -20])  # This is at 110 mm collim to source distance
-    system.sources.sc = np.array([201, -10, -20])  # beamstop
-    system.sources.vsze = 2  
-    system.sources.npix = np.array([101, 31])  # With above, [201, 61]
+    system.sources.sc = np.array([0, -10, -20])  # This is at 110 mm collim to source distance
+    # system.sources.sc = np.array([201, -10, -20])  # beamstop
+    system.sources.vsze = 1
+    system.sources.npix = np.array([201, 61])  # With above, [201, 61]
 
     # ~ Table ~
     # system.sources.sc = np.array([200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
