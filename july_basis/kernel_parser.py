@@ -50,20 +50,6 @@ class kernel_parse(object):  # PMMA
            # Pickle dictionary using protocol 0.
             pickle.dump(kern_dict, output)
 
-    def generate_position_kernel(self):
-        """Generates list of legendre objects where each entry is one img_pxl averaged emission profile.
-        Highest energy first"""
-        # TODO: think carefully about desired output
-        # oxygen613 = {'total': excitation['Oxy613_sig'], 'a20': excitation['Oxy613_a20'],
-        #              'a40': excitation['Oxy613_a40'],
-        #              'a60': excitation['Oxy613_a60']}
-
-        wgt =  np.diff(self.projected_range,
-                       prepend=self.p_ranges['Projected'][self.p_ranges['Energy'] == 8])
-        # / self.img_pxl_sze
-
-        scaled_range = self.projected_range # /self.img_pxl_sze
-
 
 def main_kern_parse(save_name='kernels.pkl', **kwargs):
     kern_parser = kernel_parse(**kwargs)
