@@ -45,7 +45,14 @@ class kernel_parse(object):  # PMMA
         proton_params = {'projected_8MeV': self.p_ranges['Projected'][self.p_ranges['Energy'] == 8],
                          'projected_ranges': self.projected_range}  # CSDA range not saved
         constant_params = {'n_dens': self.n_dens, 'atom_fractions': self.atom_fractions}
-        kern_dict = {**self.excitation, **proton_params, **constant_params}
+        # print("Self.excitation: ", self.excitation)
+        # print("Type: ", type(self.excitation))
+        # print("Self.excitation['Energy']:", self.excitation['Energy'])
+        # print("dtype: ", self.excitation.dtype.names)
+        exc_dict = {name: self.excitation[name] for name in self.excitation.dtype.names}
+        print("Exc_dict: ", exc_dict)
+        kern_dict = {**exc_dict, **proton_params, **constant_params}
+        print("Kern_dict: ", kern_dict)
         with open(save_name, 'wb') as output:
            # Pickle dictionary using protocol 0.
             pickle.dump(kern_dict, output)

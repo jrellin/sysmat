@@ -55,17 +55,27 @@ class physics_basis(object):  # PMMA
             self.params = pickle.load(fp)
 
     def fold_energy_averaged(self, sysmat_fname, angle_fname,
-                             carbon=True, oxygen=False,  # normalized=True,
+                             x_pixels=201, element='C',  # normalized=True,
                              save=True, include_sin_term=False):
         """Folds in energy averaged cross sections. Can fold in carbon and/or oxygen. Here carbon is 4.4 line,
         and oxygen is only 6.1 MeV. Image pixel size given in cm. Normalized defines probabilities
          relative to a0 term, else calculates absolute given PMMA parameters"""
         both = False
-        if not carbon and not oxygen:
-            return  # nothing to fold
+        carbon = False
+        oxygen = False
 
-        if carbon and oxygen:
+        element = element.upper()
+        if element in ('CO', 'OC'):
             both = True
+            carbon = True
+            oxygen = True
+        else:
+            if element not in self.elements:
+                ValueError("Element {e} not in allowed elements list: {a}".format(e=element.upper(), a=self.elements))
+            if element == 'C':
+                carbon = True
+            else:
+                oxygen = True
 
         mb_convert = 1e-27  # (cm^2/mb)
         l_objs = {}
@@ -130,6 +140,11 @@ class physics_basis(object):  # PMMA
         assert s_table.nrows == a_table.nrows, \
             "sysmat rows: {s}. angle rows: {a}".format(s=s_table.nrows, a=a_table.nrows)
 
+        if include_sin_term:
+            save_name += '_wSin'
+        else:
+            save_name += '_noSin'
+
         new_file = tables.open_file(save_name, mode="w", title="E Avg Folded System Response")
         folded_sysmat = new_file.create_earray('/', 'sysmat',
                                                atom=tables.atom.Float64Atom(),
@@ -179,12 +194,14 @@ class physics_basis(object):  # PMMA
                 n_idx = []
                 wgt_prev = []
 
-            idxs.append(np.append(idx, n_idx))
+            idxs.append(np.append(idx, n_idx).astype('int'))
             wgts.append(np.append(wgt, wgt_prev))
             pos += self.im_pxl_sze
 
         if debug:
             print("Bins generated: ", len(idxs))
+            print("Idxs: ", idxs)
+            print("Weights: ", wgts)
         return idxs, wgts
 
     def _generate_pos_basis(self, element='C', **kwargs):
@@ -192,7 +209,8 @@ class physics_basis(object):  # PMMA
         indexes, wgts = self._pos_weights(**kwargs)  # kwargs = Debug
         bins = len(indexes)
         basis = [None] * bins
-
+        # print("Indexes: ", indexes)
+        # print("Weights: ", wgts)
         a0, a20, a40, a60 = np.zeros(4)
 
         for i, (bin_idxs, bin_wgts) in enumerate(zip(indexes, wgts)):
@@ -223,12 +241,11 @@ class physics_basis(object):  # PMMA
                                **kwargs):
         """Folds in energy averaged cross sections. Can fold in carbon and/or oxygen. Here carbon is 4.4 line,
         and oxygen is only 6.1 MeV. Image pixel size given in cm. Always normalized. *args is fed to folded_response.
-        Must be sysmat_fname and angle_fname"""
+        Must be sysmat_fname and angle_fname. **kwargs is Debug"""
 
         if element.upper() not in self.elements:
             ValueError("Element {e} not in allowed elements list: {a}".format(e=element.upper(), a=self.elements))
 
-        l_objs = {}
         save_name = 'p_avg' + element  # folded system response name
 
         pos_basis = self._generate_pos_basis(element=element, **kwargs)  # returns list of coeff.
@@ -239,6 +256,11 @@ class physics_basis(object):  # PMMA
 
         s = s_table.read()
         a = a_table.read()
+
+        try:
+            print("s_table.nrows: ", s_table.nrows)
+        except Exception as e:
+            print(e)
 
         s_file.close()
         a_file.close()
@@ -251,6 +273,7 @@ class physics_basis(object):  # PMMA
         geom = s.T.reshape([dets, pxls // x_pixels, x_pixels])
         angs = a.T.reshape([dets, pxls // x_pixels, x_pixels])
         tot = np.copy(geom)  # this keeps first pos basis x-axis values the same
+        tot[:, :, pb_length:] = 0.0  # Need to empty this space
 
         b = np.polynomial.Legendre(np.array([1, 0, 0, 0, 0, 0, 0]))
 
@@ -261,23 +284,46 @@ class physics_basis(object):  # PMMA
                 tot[:, :, pb_length:] += geom[:, :, pb_length-position:x_pixels-position] \
                                          * b(angs[:, :, pb_length-position:x_pixels-position]) /\
                                          np.sin(angs[:, :, pb_length-position:x_pixels-position])
+
             else:
                 tot[:, :, pb_length:] += geom[:, :, pb_length - position:x_pixels - position] \
                                          * b(angs[:, :, pb_length - position:x_pixels - position])
+
+        if include_sin_term:
+            save_name += '_wSin'
+        else:
+            save_name += '_noSin'
 
         new_file = tables.open_file(save_name, mode="w", title="P Avg Folded System Response")
         folded_sysmat = new_file.create_earray('/', 'sysmat',
                                                atom=tables.atom.Float64Atom(),
                                                shape=(0, 48 * 48),
-                                               expectedrows=s_table.nrows)
+                                               expectedrows=s.shape[0])
         folded_sysmat.append(tot.transpose((1, 2, 0)).reshape(s.shape))
         new_file.flush()
         new_file.close()
 
-        
-def main():
-    pass
+
+def main(pos_basis=True, **kwargs):
+    base_folder = '/Users/justinellin/Desktop/July_Work/current_sysmat/'
+    sysmat_file = base_folder + '2021-07-03-1015_SP1.h5'
+    angle_file = base_folder + 'angles_2021-07-03-2008.h5'
+    kfile = '/Users/justinellin/repos/sysmat/july_basis/kernels.pkl'
+
+    fold_gen = physics_basis(kfile_name=kfile)
+    if pos_basis:
+        # fold_gen.fold_position_averaged(sysmat_file, angle_file,
+        #                                x_pixels=201, element='C',
+        #                                include_sin_term=False, debug=False)
+        fold_gen.fold_position_averaged(sysmat_file, angle_file, **kwargs)
+    else:
+        fold_gen.fold_energy_averaged(sysmat_file, angle_file, **kwargs)
+        # fold_energy_averaged(self, sysmat_fname, angle_fname,
+        #                     x_pixels=201, element='C',
+        #                     save=True, include_sin_term=False):
 
 
 if __name__ == "__main__":
-    main()
+    pos_basis = False  # True = position basis, False = energy average basis
+    element = 'O'
+    main(pos_basis=pos_basis, element=element)
