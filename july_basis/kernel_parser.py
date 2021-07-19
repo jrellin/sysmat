@@ -31,7 +31,8 @@ class kernel_parse(object):  # PMMA
     n_dens = number_density()  # 1/cm^3
     atom_fractions = atom_fractions()
 
-    def __init__(self, cs_fname='cross_sections.txt', pstar_fname='PSTAR_PMMA.txt'):
+    def __init__(self, cs_fname='data/cross_sections.txt',
+                 pstar_fname='data/PSTAR_PMMA.txt'):
         self.p_ranges = np.genfromtxt(pstar_fname, skip_header=3, names=self.pstar_names)  # p_ranges
         self.excitation = np.genfromtxt(cs_fname, skip_header=2, names=self.cs_names)  # excitation
         # self.img_pxl_sze = img_pxl_sze
