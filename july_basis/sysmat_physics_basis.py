@@ -1,6 +1,7 @@
 import numpy as np
 import pickle
 import tables
+from matplotlib import pyplot as plt
 # Use kernel_parser before sysmat_physics_basis
 
 
@@ -32,7 +33,7 @@ class physics_basis(object):  # PMMA
     m_dens = 1.18  # g/cm^3 PMMA
     elements = ('C', 'O')  # 4.4 MeV and 6.1 MeV lines
 
-    leg_norms =  (2 * np.arange(7) + 1)/2.0  # i.e. up to a6 term
+    # leg_norms =  (2 * np.arange(7) + 1)/2.0  # i.e. up to a6 term, WAS NOT NEEDED
 
     fields = ['Energy',  # from cross section files
               'Oxy712_sig', 'Oxy712_a20',
@@ -104,7 +105,7 @@ class physics_basis(object):  # PMMA
                 rel_int_prob = self.params['C_sig']/(self.params['C_sig'] + self.params['Oxy613_sig'])
                 wgt_C *= rel_int_prob *  self.params['frac_C'] / (self.params['frac_C'] + self.params['frac_O'])
 
-            bas_C = np.polynomial.Legendre(self.leg_norms * wgt_C)
+            bas_C = np.polynomial.Legendre(wgt_C)
             tot_legendre += bas_C
             l_objs['Carbon'] = bas_C
             # yld_Oxy613 = bas_Oxy613(costh)
@@ -127,7 +128,7 @@ class physics_basis(object):  # PMMA
                 rel_int_prob = self.params['Oxy613_sig'] / (self.params['C_sig'] + self.params['Oxy613_sig'])
                 wgt_613 *= rel_int_prob * self.params['frac_O'] / (self.params['frac_C'] + self.params['frac_O'])
 
-            bas_Oxy613 = np.polynomial.Legendre(self.leg_norms * wgt_613)
+            bas_Oxy613 = np.polynomial.Legendre(wgt_613)
             tot_legendre += bas_Oxy613
             l_objs['Oxygen'] = bas_Oxy613
 
@@ -153,7 +154,7 @@ class physics_basis(object):  # PMMA
         if include_sin_term:
             # This corrects for solid angle subtended at constant polar angle (here, relative to beam axis)
             r_angles = a_table.read()  # response angles
-            folded_sysmat.append(s_table.read() * tot_legendre(r_angles)) / np.sin(r_angles)
+            folded_sysmat.append(s_table.read() * tot_legendre(np.cos(r_angles))) / np.sin(r_angles)
         else:
             folded_sysmat.append(s_table.read() * tot_legendre(np.cos(a_table.read())))
         new_file.flush()
@@ -231,7 +232,8 @@ class physics_basis(object):  # PMMA
             coeff = np.array([1, 0, a20, 0, a40, 0, a60])
 
             # basis[i] = np.polynomial.Legendre(self.leg_norms * coeff)
-            basis[i] = self.leg_norms * coeff
+            # basis[i] = self.leg_norms * coeff  # len_norms not needed
+            basis[i] = coeff
 
         return basis
 
@@ -282,12 +284,12 @@ class physics_basis(object):  # PMMA
             b.coef = coefficients
             if include_sin_term:
                 tot[:, :, pb_length:] += geom[:, :, pb_length-position:x_pixels-position] \
-                                         * b(angs[:, :, pb_length-position:x_pixels-position]) /\
+                                         * b(np.cos(angs[:, :, pb_length-position:x_pixels-position])) /\
                                          np.sin(angs[:, :, pb_length-position:x_pixels-position])
 
             else:
                 tot[:, :, pb_length:] += geom[:, :, pb_length - position:x_pixels - position] \
-                                         * b(angs[:, :, pb_length - position:x_pixels - position])
+                                         * b(np.cos(angs[:, :, pb_length - position:x_pixels - position]))
 
         if include_sin_term:
             save_name += '_wSin'
@@ -304,10 +306,98 @@ class physics_basis(object):  # PMMA
         new_file.close()
 
 
+def test_single_pt_eavg(col=101, row=31, dims=(201, 61), **kwargs):
+    base_folder = '/Users/justinellin/Desktop/July_Work/current_sysmat/'
+    sysmat_file = base_folder + '2021-07-03-1015_SP1.h5'
+    angle_file = base_folder + 'angles_2021-07-19-1827.h5'
+    kfile = '/Users/justinellin/repos/sysmat/july_basis/kernels.pkl'
+
+    fold_gen = physics_basis(kfile_name=kfile)
+    tot_legendre, _, _ = fold_gen.fold_energy_averaged(sysmat_file, angle_file, save=False, **kwargs)
+
+    s_file, s_table = load_response_table(sysmat_file, name='sysmat')
+    a_file, a_table = load_response_table(angle_file, name='pt_angles')
+
+    dx, dy = dims
+    idx = (row * dx) + col
+
+    pt_geom = s_table[idx].reshape([48, 48])
+    pt_angles = tot_legendre(np.cos(a_table[idx].reshape([48, 48])))
+    tot = (s_table[idx] * tot_legendre(np.cos(a_table[idx]))).reshape([48, 48])
+    # tot = pt_geom * pt_angles
+
+    s_file.close()
+    a_file.close()
+
+    titles = ('geometry', 'emission', 'combined')
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(9, 5),
+                            subplot_kw={'xticks': [], 'yticks': []})
+
+    for ax, proj, title in zip(axs, (pt_geom, pt_angles, tot), titles):
+        img = ax.imshow(proj, cmap='magma', origin='upper', interpolation='nearest')
+        ax.set_title(title)
+        if title == 'emission':
+            fig.colorbar(img, ax=ax, fraction=0.045, pad=0.04)
+
+    plt.tight_layout()
+    plt.show()
+
+
+def test_single_pt_pavg(col=101, row=31, dims=(201, 61), **kwargs):
+    base_folder = '/Users/justinellin/Desktop/July_Work/current_sysmat/'
+    sysmat_file = base_folder + '2021-07-03-1015_SP1.h5'
+    angle_file = base_folder + 'angles_2021-07-19-1827.h5'
+    kfile = '/Users/justinellin/repos/sysmat/july_basis/kernels.pkl'
+
+    fold_gen = physics_basis(kfile_name=kfile)
+    pos_basis = fold_gen._generate_pos_basis(**kwargs)
+    # pb_length = len(pos_basis)
+
+    s_file, s_table = load_response_table(sysmat_file, name='sysmat')
+    a_file, a_table = load_response_table(angle_file, name='pt_angles')
+
+    s = s_table.read()
+    a = a_table.read()
+
+    assert s.shape == a.shape, "Angles table shape, {a}, and sysmat table shape, {s}," \
+                               " not the same".format(a=a.shape, s=s.shape)
+
+    dx, dy = dims
+    idx = (row * dx) + col
+
+    pt_original = s_table[idx].reshape([48, 48])  # i.e. position = 0, original basis
+    tot = np.zeros_like(pt_original)
+
+    b = np.polynomial.Legendre(np.array([1, 0, 0, 0, 0, 0, 0]))
+
+    for position, coefficients in enumerate(pos_basis):
+        # position is relative position of current basis point
+        b.coef = coefficients
+        pt_geom = s_table[idx-position].reshape([48, 48])
+        pt_angles = a_table[idx-position].reshape([48, 48])
+
+        tot += pt_geom * b(np.cos(pt_angles))
+
+    s_file.close()
+    a_file.close()
+
+    titles = ('original', 'physics basis')
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9, 5),
+                            subplot_kw={'xticks': [], 'yticks': []})
+
+    for ax, proj, title in zip(axs, (pt_original, tot), titles):
+        img = ax.imshow(proj, cmap='magma', origin='upper', interpolation='nearest')
+        ax.set_title(title)
+        # fig.colorbar(img, ax=ax, fraction=0.045, pad=0.04)
+
+    plt.tight_layout()
+    plt.show()
+
+
 def main(pos_basis=True, **kwargs):
     base_folder = '/Users/justinellin/Desktop/July_Work/current_sysmat/'
     sysmat_file = base_folder + '2021-07-03-1015_SP1.h5'
-    angle_file = base_folder + 'angles_2021-07-03-2008.h5'
+    angle_file = base_folder + 'angles_2021-07-19-1827.h5'
     kfile = '/Users/justinellin/repos/sysmat/july_basis/kernels.pkl'
 
     fold_gen = physics_basis(kfile_name=kfile)
@@ -324,6 +414,8 @@ def main(pos_basis=True, **kwargs):
 
 
 if __name__ == "__main__":
-    pos_basis = False  # True = position basis, False = energy average basis
-    element = 'O'
+    pos_basis = True  # True = position basis, False = energy average basis
+    element = 'C'
     main(pos_basis=pos_basis, element=element)
+    # test_single_pt_eavg(col=101, row=31, dims=(201, 61), element=element)
+    # test_single_pt_pavg(col=101, row=31, dims=(201, 61), element=element)

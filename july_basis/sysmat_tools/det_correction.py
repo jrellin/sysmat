@@ -42,7 +42,7 @@ def weights(mid_include=True):
     return edge_gain_correction, corner_gain_correction, save_name
 
 
-def main(**kwargs):
+def main(save=True, **kwargs):
     ndets = np.array((4, 4))
     det_template =  np.ones([12, 12])
     print(weights(**kwargs))
@@ -58,8 +58,9 @@ def main(**kwargs):
 
     correction = np.tile(det_template, ndets)
     # print("det_template: ", det_template)
-    np.save(save_name, correction)
+    if save:
+        np.save(save_name, correction)
 
 
 if __name__ == "__main__":
-    main(mid_include=False)
+    main(mid_include=False, save=False)

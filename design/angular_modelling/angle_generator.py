@@ -121,6 +121,14 @@ def single_pt_angles(src_pt=None, legendre_plot=False, l_order=2, stopwatch=Fals
         wgts = np.zeros(7)
         wgts[l_order] = 1
         poly = np.polynomial.Legendre(wgts)
+
+        # TODO: REMOVE, WAS USED FOR TESTING JULY 20
+        # print("Poly.coef before: ", poly.coef)
+        # leg_norms = (2 * np.arange(7) + 1) / 2.0
+        # nc =  np.array([0.5, 0., 1.125, 0., -0.92454545, 0, 0])/leg_norms
+        # poly.coef =  nc
+        # print("Poly.coef after: ", poly.coef)
+
         leg_eval = poly(np.cos(img))
         # img = np.max(leg_eval) /  leg_eval
         img = leg_eval
@@ -149,6 +157,7 @@ def single_pt_angles(src_pt=None, legendre_plot=False, l_order=2, stopwatch=Fals
 def main(**kwargs):
     start = time.time()
     system = create_system()
+    nx, ny = system.detector_system.detectors[0].npix
 
     # ==================== H5 File ====================
 
@@ -180,7 +189,8 @@ def main(**kwargs):
 
     for src_pt in system.sources.source_pt_iterator():
         for det in system.detector_system.detectors:
-            det_angles[det.det_id] = angle_between_vectors_and_beam(det.face_pts(), src_pt)
+            det_angles[det.det_id] = angle_between_vectors_and_beam(det.face_pts(), src_pt).reshape([ny, nx])
+            # TODO: Check that reshape works
 
         pt_angles.append(to_image(det_angles, idx_row).ravel()[None])
         # pt_angles.append(system._point_response_function(src_pt, **kwargs).ravel()[None])
