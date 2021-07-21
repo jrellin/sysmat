@@ -210,7 +210,6 @@ def main(**kwargs):
 
 if __name__ == "__main__":
     main()
-
     # pt = np.array([-40, -10, -20])
     # single_pt_angles(src_pt=None, legendre_plot=False, stopwatch=True)  # angles, radians
     # single_pt_angles(src_pt=None, legendre_plot=True, l_order=2, stopwatch=True)
