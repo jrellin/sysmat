@@ -178,3 +178,4 @@ basis = {
 #    pickle.dump(basis, output)
 
 plt.show()
+# TODO: Fix normalization of legendre polynomials
