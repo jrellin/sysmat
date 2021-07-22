@@ -377,7 +377,20 @@ def main5():  # Unfolded Response July 6 (for July 3rd sysmat), correct detector
     append_responses(region_files, save_name="july6_full_response_folded")  # folded
 
 
+def main6():  # Responses July 20
+    region_files = [  # '/home/justin/repos/sysmat_current/sysmat/design/2021-07-03-1015_SP1.h5',  # FOV, unfolded
+                    '/home/justin/Desktop/july20/FoV_weights/e_avgC_noSin.h5',  # FOV, e_evg C
+                    # '/home/justin/Desktop/july20/FoV_weights/p_avgO_noSin.h5',  # FOV, p_avg C
+                    # '/home/justin/repos/sysmat_current/sysmat/design/July6_folded_g4.npy',  # FOV, folded
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-07-11-0905_SP1.h5',  # Top FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-07-10-1058_SP1.h5',  # Bot FOV
+                    '/home/justin/repos/sysmat_current/sysmat/design/2021-07-16-1946_SP1.h5']  # Beam Stop
+    #  '/home/justin/repos/sysmat_current/sysmat/design/2021-07-17-1727_SP1.h5'  # Beam Port
+    append_responses(region_files, save_name="july20_full_response_eavg")  # folded
+
+
 if __name__ == "__main__":
     # main3()
     # main4()
-    main5()
+    # main5()
+    main6()

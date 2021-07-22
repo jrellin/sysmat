@@ -155,22 +155,16 @@ class Detector(object):
         return [enter, total_intersection]
 
     def _crystal_interaction_probabilities(self, ray_array, em_dir, step, enter, total_intersection, prefactor=1.0):
-        # TODO: This whole section is unique to current version, em_dir not needed but kept to be close to main code
-        # theta = np.abs(np.dot(np.vstack([self.norm, self.axes]), em_dir))
-        # area = (self.pix_size * self.pix_size * np.cos(theta[0])) + \
-        #        (self.pix_size * self.thickness * np.cos(theta[1])) + \
-        #        (self.pix_size * self.thickness * np.cos(theta[2]))
-
         inside_rays = ray_array[enter:(enter+total_intersection)]
-
-        # prob_interact =  area * np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0]))
-        #   TODO: second line is a calculated area
         prob_interact = np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0])) * \
                         (self.pix_size ** 2) * \
-                        (1 - np.exp(-self.mu * self.rho * step)) * \
+                        (1 - np.exp(-self.mu * self.rho * step)) / \
                         (4 * np.pi * (step * np.arange(self.det_system.imager._ray_det_enter + enter,
                                                        self.det_system.imager._ray_det_enter + enter +
                                                        total_intersection)) ** 2)
+        # comment: prob_interact = (prob doesn't interact to step X) * (prob interacts in step X+1) * (solid angle)
+        # * (prob doesn't interact with collimator)
+        # solid angle = (prefactor * (area_pixels/solid sphere)), prefactor -> glancing angle on detector surface
 
         return np.histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
                               np.dot(inside_rays - self.c, self.axes[1]),
