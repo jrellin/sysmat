@@ -400,26 +400,31 @@ def main():
     print("Farthest Plane: ", system.detector_system.farthest_plane)
 
     # ==================== Sources ====================
-    # system.sources.sc = np.array([0, -10, -20])  # This is at 110 mm collim to source distance
-    # system.sources.vsze = 1
-    # system.sources.npix = np.array([201, 61]) # FOV
+    system.sources.sc = np.array([0, -10, -40])  # 90 mm to collimator
+    # system.sources.sc = np.array([0, -10, -30])  # 100 mm to collimator
+    # system.sources.sc = np.array([0, -10, -20])  # This is at 110 mm collim to source distance (default)
+    # system.sources.sc = np.array([0, -10, -10])  # 120 mm to collimator
+
+    system.sources.vsze = 1
+    system.sources.npix = np.array([201, 61])  # FOV
 
     # In Plane
-    system.sources.sc = np.array([0, 61, -20])  # above FoV
+    # system.sources.sc = np.array([0, 61, -20])  # above FoV
     # system.sources.sc = np.array([0, -71, -20])  # below FoV
-    system.sources.vsze = 2
-    system.sources.npix = np.array([101, 39])  # 31 below, 39 above
+    # system.sources.vsze = 2
+    # system.sources.npix = np.array([101, 31])  # 31 below, 39 above
 
     # Beam Stop
-    # system.sources.sc = np.array([-201, -10, -20])
+    # system.sources.sc = np.array([-201, -10, -20])  # beam port: -201. beam stop: 201
     # system.sources.vsze = 2
     # system.sources.npix = np.array([101, 31])
 
     # ~ Table ~
     # system.sources.sc = np.array([200, table_posy, -110])  # Center is 20 mm away from collimator (closer to obj)
+    # print("Table Pos Y: ", table_posy)
     # system.sources.s_ax[1] = np.array([0, 0, 1])  # positive z
     # system.sources.vsze = 10  # CM steps
-    # system.sources.npix = np.array([19, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
+    # system.sources.npix = np.array([41, 23])  # I.E. 200 cm across in beam direction and 230 cm from object to dets
     # Starts at z = 0 (object plane) then goes back to z = -260, sweeps from neg X (near beam port)
     # to positive X (near target) for each z
 
@@ -459,4 +464,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # TODO: CHECK SUBSAMPLE
     # test(separate=False)
