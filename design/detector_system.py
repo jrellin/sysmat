@@ -153,26 +153,6 @@ class Detector(object):
     # BOT
     # =================== Only used with angle_generator.py ===================
 
-    # =================== Only used with angle_generator.py ===================
-    # TOP
-    def face_pts(self, back=False):  # back is True means back plane, TODO: Add to detector_system.py
-        ax0_scalars = np.arange((-self.npix[0] / 2. + 0.5),
-                                (self.npix[0] / 2. + 0.5)) * self.pix_size
-
-        ax1_scalars = np.arange((-self.npix[1] / 2. + 0.5),
-                                (self.npix[1] / 2. + 0.5))[::-1] * self.pix_size
-    # Reversed ordering
-
-        ax0_vec = np.outer(ax0_scalars, self.axes[0])
-        ax1_vec = np.outer(ax1_scalars, self.axes[1])
-
-        centers = self.c +  (ax1_vec[:, np.newaxis] + ax0_vec[np.newaxis, :]).reshape(-1, 3)
-
-        # return centers.reshape(self.npix[0], self.npix[1]) + (back * (-1) * self.thickness * self.norm)
-        return centers + (back * (-1) * self.thickness * self.norm)
-    # BOT
-    # =================== Only used with angle_generator.py ===================
-
     def _detector_sample_pts(self, mid=True, subsample=1):  # end_pts
         # For me this meant starting from upper left (facing collimator) and going right then down each row
         subpixels = subsample
@@ -196,22 +176,16 @@ class Detector(object):
         return [enter, total_intersection]
 
     def _crystal_interaction_probabilities(self, ray_array, em_dir, step, enter, total_intersection, prefactor=1.0):
-        # TODO: This whole section is unique to current version, em_dir not needed but kept to be close to main code
-        # theta = np.abs(np.dot(np.vstack([self.norm, self.axes]), em_dir))
-        # area = (self.pix_size * self.pix_size * np.cos(theta[0])) + \
-        #        (self.pix_size * self.thickness * np.cos(theta[1])) + \
-        #        (self.pix_size * self.thickness * np.cos(theta[2]))
-
         inside_rays = ray_array[enter:(enter+total_intersection)]
-
-        # prob_interact =  area * np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0]))
-        #   TODO: second line is a calculated area
         prob_interact = np.exp(-self.mu * self.rho * step * np.arange(inside_rays.shape[0])) * \
                         (self.pix_size ** 2) * \
-                        (1 - np.exp(-self.mu * self.rho * step)) * \
+                        (1 - np.exp(-self.mu * self.rho * step)) / \
                         (4 * np.pi * (step * np.arange(self.det_system.imager._ray_det_enter + enter,
                                                        self.det_system.imager._ray_det_enter + enter +
                                                        total_intersection)) ** 2)
+        # comment: prob_interact = (prob doesn't interact to step X) * (prob interacts in step X+1) * (solid angle)
+        # * (prob doesn't interact with collimator)
+        # solid angle = (prefactor * (area_pixels/solid sphere)), prefactor -> glancing angle on detector surface
 
         return np.histogram2d(np.dot(inside_rays - self.c, self.axes[0]),
                               np.dot(inside_rays - self.c, self.axes[1]),

@@ -277,5 +277,5 @@ def main_table():
 
 
 if __name__ == "__main__":
-    # TODO: Check that code here matches imager_system
+    # TODO: NOT UPDATED, USE IMAGER_SYSTEM.PY
     main_table()
