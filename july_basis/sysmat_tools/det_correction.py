@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def flip_det(proj_array, ind, flip_ud=False, n_rot=1, ndets=(4, 4), det_pxls=(12, 12)):
@@ -10,13 +11,15 @@ def flip_det(proj_array, ind, flip_ud=False, n_rot=1, ndets=(4, 4), det_pxls=(12
     col = ind % det_cols  # 0 is on left
     ny, nx = det_pxls
 
-    proj = proj_array.reshape([ny * det_rows, nx * det_cols])
-    area = proj[(col * ny):((col + 1) * ny), (row * nx):((row + 1) * nx)]
+    proj = np.copy(proj_array).reshape([ny * det_rows, nx * det_cols])
+    # area = proj[(col * ny):((col + 1) * ny), (row * nx):((row + 1) * nx)]
+    area = proj[(row * nx):((row + 1) * nx), (col * ny):((col + 1) * ny)]
 
     if flip_ud:
         area = area[::-1]
 
-    proj[(col * ny):((col+1)*ny), (row * nx):((row+1)*nx)] = np.rot90(area, n_rot)
+    # proj[(col * ny):((col+1)*ny), (row * nx):((row+1)*nx)] = np.rot90(area, n_rot)
+    proj[(row * nx):((row + 1) * nx), (col * ny):((col + 1) * ny)] = np.rot90(area, n_rot)
     return proj
 
 
@@ -42,6 +45,28 @@ def weights(mid_include=True):
     return edge_gain_correction, corner_gain_correction, save_name
 
 
+def test_flip(filename, mod, flip=False, rotations=1, **kwargs):
+    # file = '/Users/justinellin/Dissertation/August/carbon_scatter/pos29mm_Aug1.npz'
+
+    data = np.load(filename)
+    orig_img = data['image_list']
+    new_img = flip_det(orig_img, mod, flip_ud=flip, n_rot=rotations, **kwargs)
+    # print("Data keys: ", [*data])
+    # print("Data['image_list']: ", data['image_list'])
+
+    titles = ('original', 'mod flipped')
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(9, 5),
+                            subplot_kw={'xticks': [], 'yticks': []})
+
+    for ax, proj, title in zip(axs, (orig_img, new_img), titles):
+        img = ax.imshow(proj, cmap='magma', origin='upper', interpolation='nearest')
+        ax.set_title(title)
+        # fig.colorbar(img, ax=ax, fraction=0.045, pad=0.04)
+
+    plt.tight_layout()
+    plt.show()
+
+
 def main(save=True, **kwargs):
     ndets = np.array((4, 4))
     det_template =  np.ones([12, 12])
@@ -63,4 +88,6 @@ def main(save=True, **kwargs):
 
 
 if __name__ == "__main__":
-    main(mid_include=False, save=False)
+    # main(mid_include=False, save=False)
+    test_flip('/Users/justinellin/Dissertation/August/carbon_scatter/pos29mm_Aug1.npz', 11,
+              flip=True, rotations=0)

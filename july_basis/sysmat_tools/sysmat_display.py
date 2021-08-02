@@ -112,7 +112,7 @@ class sysmat_display(object):
             fig.savefig(save_name + '.png')
 
 
-def main_projections(x_s=30, y_s=-10, width=10, steps=31, show=False, save=True):
+def main_projections(x_s=30, y_s=-10, width=10, steps=31, show=False, save=False):
     """projections saves projections, sens displays total sens plot, show shows each projection,
     save saves them in batch"""
 
@@ -145,8 +145,19 @@ def main_sens(x_s=30, y_s=-10, width=10, steps=31):
     display.sysmat_file_obj.close()
 
 
-if __name__ == "__main__":
+def main():
     x_s = 51
     steps = 103
     width = 10
     main_sens(x_s=x_s, steps=steps)
+
+
+def main2():
+    x_s = 50
+    y_s = -10
+    main_projections(x_s=x_s, y_s=y_s, width=1, steps=1, show=True, save=False)
+    pass
+
+
+if __name__ == "__main__":
+    main2()
